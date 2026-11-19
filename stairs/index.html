@@ -137,6 +137,7 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
       <button class="arrow" id="pvNext">▶</button>
     </div>
     <div id="pvName">눕</div>
+    <button id="btnPhoto" class="hide" style="margin-top:6px;background:#fff0f5;color:#d81b60;border-radius:12px;padding:7px 14px;font-weight:900;font-size:14px">📷 얼굴 사진 넣기</button>
     <div class="seg" id="diffSeg">
       <button data-d="0">쉬움</button><button data-d="1">보통</button><button data-d="2">어려움</button>
     </div>
@@ -205,6 +206,17 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
     <div class="row" id="mBtns"></div>
   </div>
 </div>
+<div id="crop" class="screen hide" style="z-index:25">
+  <div class="panel">
+    <div style="font-weight:900;font-size:18px;letter-spacing:-.5px;white-space:nowrap">얼굴을 네모 칸에 맞춰 주세요</div>
+    <div style="font-size:12.5px;color:#7a86a3;font-weight:700;margin:4px 0 8px;white-space:nowrap">손가락으로 끌어서 옮기고, 아래 막대로 크기 조절</div>
+    <canvas id="cropCv" width="560" height="560" style="width:260px;height:260px;display:block;margin:0 auto;border-radius:18px;background:#222;touch-action:none"></canvas>
+    <input id="cropZoom" type="range" min="1" max="5" step="0.01" value="1.5" style="width:100%;margin-top:12px;accent-color:#d81b60">
+    <div class="row"><button class="big b-gray" id="cropCancel">취소</button><button class="big b-go" id="cropSave">저장</button></div>
+    <button class="big b-gray" id="cropDel" style="font-size:16px;padding:10px">🗑 사진 지우고 그림 얼굴로</button>
+  </div>
+</div>
+<input id="photoIn" type="file" accept="image/*" class="hide">
 <div id="toast"></div>
 
 <script>
@@ -226,15 +238,31 @@ const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const SKEY='infinite_stairs_v1';
 const save={coins:0,owned:['noob','rian','dungi','bacon'],sel:'noob',best:0,records:[],diff:0,sound:true,music:true,games:0};
 try{const s=JSON.parse(localStorage.getItem(SKEY)); if(s) Object.assign(save,s);}catch(e){}
-if(!save.owned.includes('dungi')) save.owned.push('dungi');
+['dungi','mom','dad'].forEach(id=>{ if(!save.owned.includes(id)) save.owned.push(id); });
 function persist(){try{localStorage.setItem(SKEY,JSON.stringify(save));}catch(e){}}
+
+/* ================= 사진 얼굴 (이 폰에만 저장) ================= */
+const FKEY='infinite_stairs_faces';
+let faceData={}; try{faceData=JSON.parse(localStorage.getItem(FKEY))||{};}catch(e){}
+const faceImgs={};
+function loadFace(id){ if(!faceData[id]){ delete faceImgs[id]; return; } const im=new Image(); im.onload=()=>{faceImgs[id]=im; if(!$('shop').classList.contains('hide')) buildShop(); if(typeof refreshMenu==='function'&&state==='menu') refreshMenu();}; im.src=faceData[id]; }
+Object.keys(faceData).forEach(loadFace);
+function saveFaces(){ try{localStorage.setItem(FKEY,JSON.stringify(faceData)); return true;}catch(e){ return false; } }
+function photoHead(G,id,cx,cy,w,r){
+  const im=faceImgs[id]; if(!im) return false;
+  G.save(); G.translate(cx,cy); if(curFace<0) G.scale(-1,1);
+  rr(G,-w/2,-w/2,w,w,r); G.save(); G.clip(); G.drawImage(im,-w/2,-w/2,w,w); G.restore();
+  G.lineWidth=w*0.04; G.strokeStyle='rgba(0,0,0,.25)'; G.stroke(); G.restore(); return true;
+}
 
 /* ================= 캐릭터 ================= */
 // hat/hat2: 머리 장식, face: 표정, ex: 등/몸 장식, det: 옷 무늬, trail: 오를 때 효과
 const CHARS=[
  {id:'noob',name:'눕',skin:'#f2cd37',shirt:'#1e88e5',pants:'#43a047',face:'smile',price:0},
- {id:'rian',name:'리안',skin:'#ffe1c9',shirt:'#e8282b',pants:'#3b6aa8',hat:'rianhair',hairC:'#2a1b14',face:'rian',det:'hoodie92',trail:'heart',price:0},
- {id:'dungi',name:'둥이',dog:true,fur:'#d9a273',trail:'heart',price:0},
+ {id:'rian',photo:true,name:'리안',skin:'#ffe1c9',shirt:'#e8282b',pants:'#3b6aa8',hat:'rianhair',hairC:'#2a1b14',face:'rian',det:'hoodie92',trail:'heart',price:0},
+ {id:'mom',photo:true,name:'엄마',skin:'#f3cfb3',shirt:'#1c1c1e',pants:'#1c1c1e',shoes:'#ff6f61',hat:'momhair',hat2:'headband',hairC:'#1f1712',hatC:'#ff3d8b',face:'smile',det:'gymlogo',ex:['barbell'],trail:'heart',price:0},
+ {id:'dad',photo:true,name:'아빠',skin:'#e9bf9a',shirt:'#1f4fd1',pants:'#151515',shoes:'#7cff3a',noSleeve:true,armC:'#151515',hat:'hair',hat2:'headband',hairC:'#141414',hatC:'#1b5d8c',face:'sport',det:'dallida',legBand:'#e53935',trail:'speed',price:0},
+ {id:'dungi',photo:true,name:'둥이',dog:true,fur:'#d9a273',trail:'heart',price:0},
  {id:'bacon',name:'베이컨',skin:'#ffd2a8',shirt:'#263238',pants:'#1565c0',hat:'bacon',hairC:'#7a4320',face:'smile',price:0},
  {id:'cat',name:'고양이',skin:'#ffe3c8',shirt:'#ffb74d',pants:'#6d4c41',hat:'hair',hat2:'catears',hairC:'#ff9800',hatC:'#ff9800',face:'cat',ex:['tail'],tailT:'cat',exC:'#ff9800',price:30},
  {id:'bunny',name:'토끼',skin:'#fff6f0',shirt:'#f8bbd0',pants:'#ec407a',hat:'bunny',hatC:'#ffffff',face:'cute',det:'buttons',detC:'#ec407a',price:30},
@@ -334,9 +362,10 @@ function drawChar(G,c,x,y,s,face,walk,t){
   } else {
     const back=Math.max(0,walk)*u*0.9, front=Math.max(0,-walk)*u*0.9;
     box(G,shade(c.pants,-0.25),-2.1*u,-3.7*u-back,2.0*u,3.7*u,0.3*u);
-    box(G,shade(c.pants,-0.5),-2.1*u,-0.7*u-back,2.0*u,0.7*u,0.25*u);
+    box(G,c.shoes?shade(c.shoes,-0.2):shade(c.pants,-0.5),-2.1*u,-0.7*u-back,2.0*u,0.7*u,0.25*u);
     box(G,c.pants,0.1*u,-3.7*u-front,2.0*u,3.7*u,0.3*u);
-    box(G,shade(c.pants,-0.4),0.1*u,-0.7*u-front,2.0*u,0.7*u,0.25*u);
+    if(c.legBand){ box(G,c.skin,0.1*u,-2.2*u-front,2.0*u,1.5*u,0.2*u); box(G,c.legBand,0.1*u,-1.8*u-front,2.0*u,1.1*u,0.2*u); box(G,shade(c.skin,-0.2),-2.1*u,-2.2*u-back,2.0*u,1.5*u,0.2*u); box(G,'#151515',-2.1*u,-1.6*u-back,2.0*u,0.9*u,0.2*u); }
+    box(G,c.shoes||shade(c.pants,-0.4),0.1*u,-0.7*u-front,2.0*u,0.7*u,0.25*u);
     if(c.dress){poly(G,c.dress,[-2.3*u,-4.4*u,2.3*u,-4.4*u,3.0*u,-1.5*u,-3.0*u,-1.5*u]); poly(G,shade(c.dress,-0.15),[-2.3*u,-4.4*u,-1.4*u,-4.4*u,-1.9*u,-1.5*u,-3.0*u,-1.5*u]); box(G,shade(c.dress,0.3),-3.0*u,-1.9*u,6.0*u,0.4*u,0.2*u);}
   }
   // 뒷팔
@@ -350,6 +379,7 @@ function drawChar(G,c,x,y,s,face,walk,t){
   // 앞팔
   arm(G,c,2.85*u,-6.8*u,armA,u,false);
   // 머리
+  if(faceImgs[c.id]){ photoHead(G,c.id,0.1*u,-8.75*u,4.0*u,1.0*u); G.restore(); return; }
   drawHat(G,c,u,t,'back');
   box(G,c.skin,-1.65*u,-10.3*u,3.3*u,3.3*u,0.75*u);
   box(G,shade(c.skin,-0.14),-1.65*u,-10.3*u,0.75*u,3.3*u,0.7*u);
@@ -385,6 +415,7 @@ function drawDog(G,c,u,t,walk){
   curly(G,lt,hx-0.2*u,hy-1.25*u,0.95*u,0.6*u,8,0.7); // 정수리 곱슬
   // 귀 (축 늘어진 귀)
   G.save(); G.translate(hx-1.0*u,hy-0.3*u); G.rotate(0.25+Math.sin(t*3)*0.05); curly(G,shade(f,-0.28),0,1.0*u,0.65*u,1.35*u,8,0.3); G.restore();
+  if(faceImgs[c.id]){ photoHead(G,c.id,hx+0.2*u,hy,3.4*u,1.7*u); return; }
   // 주둥이
   curly(G,shade(f,0.3),hx+1.35*u,hy+0.45*u,0.85*u,0.6*u,7,0.9);
   ell(G,'#2b2220',hx+2.05*u,hy+0.2*u,0.33*u,0.27*u,0); circ(G,'rgba(255,255,255,.6)',hx+2.0*u,hy+0.1*u,0.08*u);
@@ -401,13 +432,26 @@ function arm(G,c,ax,ay,ang,u,back){
   const sh=back?shade(c.shirt,-0.25):c.shirt, sk=back?shade(c.skin,-0.2):c.skin;
   if(c.ghost){box(G,back?'#dfe6f2':'#fff',-0.65*u,-0.2*u,1.3*u,3.0*u,0.6*u);G.restore();return;}
   box(G,sk,-0.7*u,-0.2*u,1.4*u,3.6*u,0.35*u);
-  box(G,sh,-0.7*u,-0.2*u,1.4*u,1.5*u,0.35*u);
+  if(c.armC) box(G,back?shade(c.armC,0.15):c.armC,-0.7*u,1.0*u,1.4*u,2.0*u,0.3*u);
+  if(!c.noSleeve) box(G,sh,-0.7*u,-0.2*u,1.4*u,1.5*u,0.35*u);
   G.restore();
 }
 function shirtDetail(G,c,u,t){
   const d=c.det, dc=c.detC||'#fff';
   G.save(); rr(G,-2.25*u,-7.2*u,4.5*u,3.8*u,0.4*u); G.clip();
   switch(d){
+    case 'gymlogo':
+      box(G,'#ffffff',-0.5*u,-6.4*u,2.4*u,1.0*u,0.15*u); box(G,'#2f5bd3',0.9*u,-6.4*u,1.0*u,1.0*u,0.15*u);
+      box(G,'#1c1c1e',-0.25*u,-6.1*u,0.9*u,0.4*u,0.1*u); box(G,'#1c1c1e',-2.25*u,-4.1*u,4.5*u,0.6*u); box(G,'#3a3a3c',-0.2*u,-4.0*u,1.6*u,0.35*u,0.1*u); break;
+    case 'dallida':
+      // 민소매 어깨 라인
+      poly(G,c.skin,[-2.3*u,-7.3*u,-1.0*u,-7.3*u,-1.6*u,-5.9*u,-2.3*u,-5.6*u]); poly(G,c.skin,[1.2*u,-7.3*u,2.3*u,-7.3*u,2.3*u,-5.6*u,1.7*u,-5.9*u]);
+      G.fillStyle=c.skin; G.beginPath(); G.arc(0.1*u,-7.3*u,0.85*u,0,Math.PI); G.fill();
+      box(G,'#fff',1.15*u,-6.75*u,0.7*u,0.48*u,0.05*u); circ(G,'#e53935',1.5*u,-6.51*u,0.14*u);
+      G.save(); G.translate(0.15*u,-5.6*u); if(curFace<0) G.scale(-1,1);
+      G.font=`900 ${0.95*u}px sans-serif`; G.textAlign='center'; G.textBaseline='middle'; G.fillStyle='#fff'; G.fillText('달리다',0,0); G.restore();
+      box(G,'#fff',-0.85*u,-4.95*u,2.2*u,1.35*u,0.12*u); box(G,'#e53935',-0.85*u,-4.95*u,2.2*u,0.35*u,0.1*u);
+      G.save(); G.translate(0.25*u,-4.15*u); if(curFace<0) G.scale(-1,1); G.font=`900 ${0.55*u}px sans-serif`; G.textAlign='center'; G.textBaseline='middle'; G.fillStyle='#111'; G.fillText('4037',0,0); G.restore(); break;
     case 'hoodie92':
       box(G,'#fbf6ee',-1.0*u,-7.25*u,2.6*u,0.55*u,0.25*u);
       G.strokeStyle='#b71c1c'; G.lineWidth=u*0.13; G.beginPath(); G.moveTo(0.0*u,-6.8*u); G.lineTo(-0.15*u,-5.6*u); G.moveTo(1.0*u,-6.8*u); G.lineTo(1.15*u,-5.6*u); G.stroke();
@@ -448,6 +492,7 @@ function drawBack(G,c,u,t){
       case 'beewings':{const f=Math.abs(Math.sin(t*25)); G.globalAlpha=0.65; ell(G,'#b3e5fc',-3.2*u,-7.4*u,1.4*u,0.9*u*(0.4+f*0.6),-0.5); ell(G,'#e1f5fe',-2.8*u,-6.0*u,1.0*u,0.6*u*(0.4+f*0.6),0.3); G.globalAlpha=1; break;}
       case 'jetpack':{box(G,'#90a4ae',-3.6*u,-7.0*u,1.4*u,3.2*u,0.5*u); box(G,'#607d8b',-3.6*u,-4.2*u,1.4*u,0.5*u,0.2*u); const fl=0.9+Math.sin(t*30)*0.3; poly(G,'#ffab00',[-3.5*u,-3.7*u,-2.3*u,-3.7*u,-2.9*u,(-3.7+1.6*fl)*u]); poly(G,'#fff176',[-3.2*u,-3.7*u,-2.6*u,-3.7*u,-2.9*u,(-3.7+0.9*fl)*u]); break;}
       case 'sword':{G.save();G.translate(-1.4*u,-5.4*u);G.rotate(-0.7); box(G,'#cfd8dc',-0.25*u,-4.6*u,0.5*u,4.0*u,0.2*u); box(G,'#5d4037',-0.3*u,-0.6*u,0.6*u,1.6*u,0.2*u); box(G,'#ffb300',-0.9*u,-0.75*u,1.8*u,0.35*u,0.15*u); G.restore(); break;}
+      case 'barbellX':{ box(G,'#e91e63',-4.0*u,-3.9*u,8.4*u,0.25*u,0.1*u); for(const bx of [-4.4,3.6]){ box(G,'#9e9e9e',bx*u,-5.0*u,0.8*u,2.5*u,0.3*u); box(G,'#43a047',bx*u+0.15*u,-4.6*u,0.5*u,1.7*u,0.2*u);} break;}
       case 'sack':{ell(G,'#a1887f',-3.1*u,-6.0*u,1.6*u,1.9*u,0.2); box(G,'#6d4c41',-3.6*u,-8.0*u,1.0*u,0.6*u,0.2*u); break;}
       case 'tail':{
         const w=Math.sin(t*5)*0.25;
@@ -465,6 +510,7 @@ function drawFront(G,c,u,t){
   if(!c.ex) return;
   for(const e of c.ex){
     if(e==='scarf'){const col=c.exC||'#e53935'; box(G,col,-2.35*u,-7.4*u,4.7*u,0.85*u,0.4*u); const f=Math.sin(t*7)*0.3*u; poly(G,shade(col,-0.15),[-1.6*u,-6.8*u,-0.8*u,-6.8*u,-1.6*u-f,-4.8*u,-2.4*u-f,-5.0*u]);}
+    if(e==='barbell'){ box(G,'#e91e63',-4.2*u,-4.0*u,8.6*u,0.28*u,0.1*u); for(const bx of [-4.7,3.7]){ box(G,'#9e9e9e',bx*u,-5.2*u,1.0*u,2.7*u,0.35*u); box(G,'#43a047',bx*u+0.2*u,-4.8*u,0.6*u,1.9*u,0.2*u);} box(G,'#ffd600',-2.4*u,-4.3*u,0.8*u,0.8*u,0.2*u); box(G,'#ffd600',2.0*u,-4.3*u,0.8*u,0.8*u,0.2*u); }
     if(e==='stetho'){G.strokeStyle='#37474f';G.lineWidth=u*0.25;G.beginPath();G.moveTo(-0.6*u,-7.2*u);G.quadraticCurveTo(-0.4*u,-5.2*u,0.6*u,-5.4*u);G.quadraticCurveTo(1.6*u,-5.4*u,1.7*u,-7.2*u);G.stroke(); circ(G,'#b0bec5',0.6*u,-5.2*u,0.35*u);}
   }
 }
@@ -475,6 +521,10 @@ function drawFace(G,c,u,t){
   const eyes=(w,h)=>{ if(blink){box(G,'#222',e1-w/2,ey,w,u*0.14);box(G,'#222',e2-w/2,ey,w,u*0.14);} else {box(G,'#222',e1-w/2,ey-h/2,w,h,w/2);box(G,'#222',e2-w/2,ey-h/2,w,h,w/2);} };
   const smile=(r)=>{G.beginPath();G.arc(mx,my-0.5*u,r||0.62*u,0.18*Math.PI,0.82*Math.PI);G.stroke();};
   switch(c.face){
+    case 'sport':
+      G.fillStyle='#111'; G.beginPath(); G.moveTo(e1-0.75*u,ey-0.45*u); G.lineTo(e2+0.95*u,ey-0.55*u); G.lineTo(e2+0.85*u,ey+0.35*u); G.quadraticCurveTo(mx+0.1*u,ey+0.55*u,e1-0.6*u,ey+0.3*u); G.closePath(); G.fill();
+      G.globalAlpha=0.7; box(G,'#c6ff00',e2-0.2*u,ey-0.35*u,0.9*u,0.18*u,0.08*u); G.globalAlpha=1;
+      G.beginPath();G.moveTo(mx-0.35*u,my-0.2*u);G.lineTo(mx+0.45*u,my-0.2*u);G.stroke(); break;
     case 'rian':
       G.beginPath();G.arc(e1,ey+0.25*u,0.33*u,Math.PI*1.15,Math.PI*1.85);G.stroke();
       G.beginPath();G.arc(e2,ey+0.25*u,0.33*u,Math.PI*1.15,Math.PI*1.85);G.stroke();
@@ -537,6 +587,9 @@ function drawHat(G,c,u,t,layer){
   for(const h of list){ if(!h) continue;
     const F=layer==='front', B=layer==='back';
     switch(h){
+      case 'momhair':
+        if(B){ G.save(); G.translate(L-0.3*u,T+0.9*u); G.rotate(0.35+Math.sin(t*6)*0.08); box(G,hair,-0.6*u,0,1.2*u,2.8*u,0.6*u); G.restore(); }
+        if(F){ box(G,hair,L-0.12*u,T-0.3*u,3.55*u,1.05*u,0.55*u); box(G,hair,L-0.12*u,T,1.0*u,1.9*u,0.35*u); box(G,'#ff3d8b',L-0.55*u,T+0.6*u,0.6*u,0.6*u,0.2*u); } break;
       case 'rianhair':
         if(B){ box(G,hair,L-0.6*u,T+0.1*u,1.9*u,5.2*u,0.9*u); }
         if(F){ box(G,hair,L-0.15*u,T-0.4*u,3.6*u,1.0*u,0.6*u); G.strokeStyle=shade(hair,0.25); G.lineWidth=u*0.1; G.beginPath(); G.moveTo(0.35*u,T-0.38*u); G.lineTo(0.35*u,T+0.4*u); G.stroke();
@@ -1055,6 +1108,8 @@ function toMenu(){
 function refreshMenu(){
   $('mBest').textContent=save.best; $('mCoin').textContent=save.coins;
   $('pvName').textContent=CMAP[save.sel].name;
+  $('btnPhoto').classList.toggle('hide',!CMAP[save.sel].photo);
+  $('btnPhoto').textContent=faceImgs[save.sel]?'📷 얼굴 사진 바꾸기':'📷 얼굴 사진 넣기';
   [...$('diffSeg').children].forEach(b=>b.classList.toggle('on',+b.dataset.d===save.diff));
   $('tgSnd').classList.toggle('off',!save.sound); $('tgBgm').classList.toggle('off',!save.music);
 }
@@ -1162,6 +1217,40 @@ $('tgSnd').onclick=()=>{save.sound=!save.sound;persist();ac();SFX.click();refres
 $('tgBgm').onclick=()=>{save.music=!save.music;persist();ac();SFX.click();refreshMenu();};
 document.addEventListener('gesturestart',e=>e.preventDefault());
 document.addEventListener('dblclick',e=>e.preventDefault());
+
+// 얼굴 사진 자르기
+const crop={img:null,zoom:1.5,ox:0,oy:0,id:null};
+const cc=$('cropCv'), cg=cc.getContext('2d'), GUIDE=380;
+function drawCrop(){
+  const im=crop.img; cg.fillStyle='#222'; cg.fillRect(0,0,560,560); if(!im) return;
+  const base=GUIDE/Math.min(im.width,im.height), sc=base*crop.zoom, w=im.width*sc, h=im.height*sc;
+  cg.drawImage(im,280-w/2+crop.ox,280-h/2+crop.oy,w,h);
+  cg.fillStyle='rgba(0,0,0,.55)'; cg.beginPath(); cg.rect(0,0,560,560); rr(cg,280-GUIDE/2,280-GUIDE/2,GUIDE,GUIDE,60); cg.fill('evenodd');
+  cg.strokeStyle='#fff'; cg.lineWidth=5; rr(cg,280-GUIDE/2,280-GUIDE/2,GUIDE,GUIDE,60); cg.stroke();
+}
+let drag=null;
+cc.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,ox:crop.ox,oy:crop.oy}; cc.setPointerCapture(e.pointerId);});
+cc.addEventListener('pointermove',e=>{ if(!drag) return; const k=560/cc.clientWidth; crop.ox=drag.ox+(e.clientX-drag.x)*k; crop.oy=drag.oy+(e.clientY-drag.y)*k; drawCrop(); });
+cc.addEventListener('pointerup',()=>drag=null); cc.addEventListener('pointercancel',()=>drag=null);
+$('cropZoom').addEventListener('input',e=>{crop.zoom=+e.target.value; drawCrop();});
+$('btnPhoto').onclick=()=>{ ac(); SFX.click(); crop.id=save.sel; $('photoIn').value=''; $('photoIn').click(); };
+$('photoIn').addEventListener('change',e=>{
+  const f=e.target.files&&e.target.files[0]; if(!f) return; crop.id=save.sel;
+  const url=URL.createObjectURL(f), im=new Image();
+  im.onload=()=>{ crop.img=im; crop.zoom=1.5; crop.ox=0; crop.oy=0; $('cropZoom').value=1.5; $('crop').classList.remove('hide'); drawCrop(); };
+  im.onerror=()=>toast('사진을 열 수 없어요'); im.src=url;
+});
+$('cropCancel').onclick=()=>{SFX.click(); $('crop').classList.add('hide');};
+$('cropSave').onclick=()=>{
+  const im=crop.img, out=document.createElement('canvas'); out.width=out.height=200; const og=out.getContext('2d');
+  const base=GUIDE/Math.min(im.width,im.height), sc=base*crop.zoom, w=im.width*sc, h=im.height*sc;
+  const k=200/GUIDE; og.drawImage(im,(280-w/2+crop.ox-(280-GUIDE/2))*k,(280-h/2+crop.oy-(280-GUIDE/2))*k,w*k,h*k);
+  faceData[crop.id]=out.toDataURL('image/jpeg',0.85);
+  if(!saveFaces()){ toast('저장 공간이 부족해요'); return; }
+  loadFace(crop.id); SFX.buy(); $('crop').classList.add('hide'); setTimeout(refreshMenu,100); toast('얼굴 사진을 넣었어요!');
+};
+$('cropDel').onclick=()=>{ delete faceData[crop.id]; saveFaces(); loadFace(crop.id); SFX.click(); $('crop').classList.add('hide'); refreshMenu(); toast('그림 얼굴로 돌아갔어요'); };
+$('btnPhoto').addEventListener('contextmenu',e=>e.preventDefault());
 
 // 시작
 resetGame(); refreshMenu(); show('menu'); requestAnimationFrame(frame);
