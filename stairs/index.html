@@ -118,8 +118,8 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
 <div id="tip" class="hide"></div>
 
 <div id="ctrl" class="hide">
-  <button class="cbtn" id="btnTurn"><span class="ic">↩</span>방향전환</button>
-  <button class="cbtn" id="btnUp"><span class="ic">⬆</span>오르기</button>
+  <button class="cbtn" id="btnTurn"><span class="ic">↖</span>왼쪽</button>
+  <button class="cbtn" id="btnUp"><span class="ic">↗</span>오른쪽</button>
 </div>
 
 <!-- MENU -->
@@ -146,7 +146,7 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
       <button class="big b-blue" id="btnRec">🏆 기록</button>
     </div>
     <div class="tog"><button id="tgSnd">🔊 효과음</button><button id="tgBgm">🎵 음악</button></div>
-    <div class="hint">조작: ← 방향전환 · → 오르기 (키보드 Z / X 도 OK)</div>
+    <div class="hint">조작: 계단이 있는 쪽 버튼을 눌러요 (← / → 키도 OK)</div>
   </div>
 </div>
 
@@ -628,9 +628,9 @@ function visualPos(){
   const p=clamp((now-P.t0)/HOP,0,1), e=1-(1-p)*(1-p);
   return {x:P.from.x+(P.to.x-P.from.x)*e, y:P.from.y+(P.to.y-P.from.y)*e - Math.sin(Math.PI*p)*S*0.22, p};
 }
-function act(turn){
+function act(dir){
   if(state!=='play') return;
-  if(turn) P.face=-P.face;
+  P.face=dir;
   const ni=P.i+1; genUntil(ni+60);
   const tx=xs[P.i]+P.face, cur=visualPos();
   started=true;
@@ -798,13 +798,13 @@ function demoStep(){
 let guideKey='';
 function updateGuide(){
   let key='';
-  if(state==='play' && score<10){ key=(xs[P.i+1]===xs[P.i]+P.face)?'up':'turn'; }
+  if(state==='play' && score<10){ key=(xs[P.i+1]>xs[P.i])?'up':'turn'; }
   if(key===guideKey) return; guideKey=key;
   $('btnUp').classList.toggle('hintb',key==='up'); $('btnTurn').classList.toggle('hintb',key==='turn');
   const tip=$('tip');
   if(!key){tip.classList.add('hide');return;}
   tip.classList.remove('hide');
-  tip.textContent=key==='up'?'👉 같은 방향이면 오르기!':'👈 방향이 바뀌면 방향전환!';
+  tip.textContent=key==='up'?'계단이 오른쪽에 있어요 👉':'👈 계단이 왼쪽에 있어요';
 }
 function drawGuideArrow(){
   if(state!=='play'||score>=10) return;
@@ -924,15 +924,15 @@ function showRec(){
 
 // 입력
 function bindBtn(el,fn){ el.addEventListener('pointerdown',e=>{e.preventDefault();el.classList.add('down');fn();}); ['pointerup','pointerleave','pointercancel'].forEach(t=>el.addEventListener(t,()=>el.classList.remove('down'))); }
-bindBtn($('btnTurn'),()=>act(true));
-bindBtn($('btnUp'),()=>act(false));
-cv.addEventListener('pointerdown',e=>{ if(state!=='play') return; e.preventDefault(); act(e.clientX<W/2); });
+bindBtn($('btnTurn'),()=>act(-1));
+bindBtn($('btnUp'),()=>act(1));
+cv.addEventListener('pointerdown',e=>{ if(state!=='play') return; e.preventDefault(); act(e.clientX<W/2?-1:1); });
 addEventListener('keydown',e=>{
   if(e.repeat) return;
   const k=e.key;
   if(state==='play'){
-    if(k==='ArrowLeft'||k==='z'||k==='Z'||k==='a'||k==='A'||k==='j'||k==='J'){e.preventDefault();act(true);press('btnTurn');}
-    else if(k==='ArrowRight'||k==='ArrowUp'||k==='x'||k==='X'||k==='d'||k==='D'||k==='k'||k==='K'||k===' '){e.preventDefault();act(false);press('btnUp');}
+    if(k==='ArrowLeft'||k==='z'||k==='Z'||k==='a'||k==='A'||k==='j'||k==='J'){e.preventDefault();act(-1);press('btnTurn');}
+    else if(k==='ArrowRight'||k==='ArrowUp'||k==='x'||k==='X'||k==='d'||k==='D'||k==='k'||k==='K'||k===' '){e.preventDefault();act(1);press('btnUp');}
     else if(k==='Escape'||k==='p'||k==='P') pauseGame();
   } else if((k==='Enter'||k===' ')&&(state==='menu'||state==='over')&&$('modal').classList.contains('hide')){ e.preventDefault(); if(state==='menu'&&!$('menu').classList.contains('hide')) startGame(); else if(state==='over') startGame(); }
 });
