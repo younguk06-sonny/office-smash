@@ -180,7 +180,7 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
       <div class="chip">🏆 최고 <span id="oBest">0</span></div>
       <div class="chip"><span class="coin"></span>+<span id="oCoin">0</span></div>
     </div>
-    <button class="big b-go" id="btnRetry">↻ 다시 하기</button>
+    <div class="row"><button class="big b-pink" id="btnCont">▶ 이어하기</button><button class="big b-go" id="btnRetry">↻ 다시 하기</button></div>
     <div class="row">
       <button class="big b-org" id="oShop">🧍 캐릭터</button>
       <button class="big b-gray" id="oMenu">🏠 처음으로</button>
@@ -605,7 +605,7 @@ let state='menu', xs=[], coinAt=[], runLeft=0, genDir=1;
 let score=0, gauge=1, started=false, gotCoins=0, shake=0, now=0, failType='';
 const P={i:0,face:1,from:{x:0,y:0},to:{x:0,y:0},t0:-1,walk:1,fall:null};
 const cam={x:0,y:0};
-let particles=[], pops=[];
+let particles=[], pops=[], conts=0, lastRec=null;
 const HOP=0.085;
 function wx(i){return xs[i]*S;} function wy(i){return -i*SH;}
 function genUntil(n){
@@ -620,7 +620,7 @@ function resetGame(){
   xs=[0]; coinAt=[false]; genDir=Math.random()<0.5?1:-1; runLeft=2+Math.floor(Math.random()*3);
   genUntil(80);
   P.i=0; P.face=xs[1]-xs[0]; P.from={x:0,y:0}; P.to={x:0,y:0}; P.t0=-1; P.fall=null;
-  score=0; gauge=1; started=false; gotCoins=0; particles=[]; pops=[];
+  score=0; gauge=1; started=false; gotCoins=0; particles=[]; pops=[]; conts=0; lastRec=null;
   cam.x=0; cam.y=0;
 }
 function visualPos(){
@@ -834,16 +834,32 @@ function gameOver(){
   const isNew=score>save.best && score>0;
   if(isNew) save.best=score;
   save.coins+=gotCoins; save.games++;
-  if(score>0){ const d=new Date(); save.records.push({s:score,c:save.sel,d:`${d.getMonth()+1}/${d.getDate()}`,m:save.diff}); save.records.sort((a,b)=>b.s-a.s); save.records=save.records.slice(0,10); }
+  if(score>0){ const d=new Date(); lastRec={s:score,c:save.sel,d:`${d.getMonth()+1}/${d.getDate()}`,m:save.diff}; save.records.push(lastRec); save.records.sort((a,b)=>b.s-a.s); save.records=save.records.slice(0,10); }
   // 기록으로 열리는 캐릭터
   const unlocked=[];
   CHARS.forEach(c=>{ if(c.best && save.best>=c.best && !save.owned.includes(c.id)){ save.owned.push(c.id); unlocked.push(c); } });
   persist();
   $('overTitle2').textContent=failType==='time'?'⏰ 시간 초과!':'앗! 떨어졌어요';
   $('overScore').innerHTML=score+(isNew?'<span class="newb">NEW</span>':'');
-  $('oBest').textContent=save.best; $('oCoin').textContent=gotCoins;
+  $('oBest').textContent=save.best; $('oCoin').textContent=gotCoins; gotCoins=0; updContBtn();
   show('over');
   if(unlocked.length){ setTimeout(()=>openModal(unlocked[0],`🎉 새 캐릭터! ${unlocked[0].name}`,[{t:'좋아요!',cls:'b-go',fn:closeModal}]),400); SFX.buy(); }
+}
+function contCost(){ return conts===0?0:conts*20; }
+function updContBtn(){ const c=contCost(), b=$('btnCont');
+  b.innerHTML=c===0?'▶ 이어하기 <small style="font-size:.7em">무료</small>':`▶ 이어하기 <span class="coin" style="vertical-align:-2px;width:16px;height:16px"></span>${c}`;
+  b.style.opacity=(c>save.coins)?0.5:1; }
+function continueGame(){
+  const c=contCost();
+  if(c>save.coins){ toast(`코인이 ${c-save.coins}개 부족해요`); return; }
+  save.coins-=c; conts++;
+  if(lastRec){ const k=save.records.indexOf(lastRec); if(k>=0) save.records.splice(k,1); lastRec=null; }
+  persist(); ac(); SFX.buy();
+  P.fall=null; P.t0=-1; P.to={x:wx(P.i),y:wy(P.i)}; P.from={...P.to};
+  coinAt[P.i+1]=coinAt[P.i+1]; gauge=1; started=false; state='play'; guideKey='';
+  show(null); $('hud').classList.remove('hide'); $('ctrl').classList.remove('hide');
+  hudScore=-1; hudCoin=-1; updHud(); $('gauge').style.transform='scaleX(1)';
+  showBanner('이어하기!', score+'계단부터 다시 출발');
 }
 function toMenu(){
   state='menu'; $('hud').classList.add('hide'); $('ctrl').classList.add('hide');
@@ -944,6 +960,7 @@ $('btnQuit').onclick=()=>{SFX.click(); toMenu();};
 document.addEventListener('visibilitychange',()=>{ if(document.hidden) pauseGame(); });
 $('btnStart').onclick=startGame;
 $('btnRetry').onclick=startGame;
+$('btnCont').onclick=continueGame;
 $('oMenu').onclick=()=>{SFX.click();toMenu();};
 $('btnShop').onclick=()=>{ac();SFX.click();buildShop();show('shop');};
 $('oShop').onclick=()=>{SFX.click();buildShop();show('shop');};
