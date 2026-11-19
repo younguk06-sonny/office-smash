@@ -39,7 +39,7 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
 #btnTurn{background:linear-gradient(#ff8a65,#f4511e)}
 #btnUp{background:linear-gradient(#4fc3f7,#1e88e5)}
 /* screens */
-.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 14px);background:rgba(10,20,60,.35);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 14px);background:rgba(10,20,60,.35);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
 .panel{background:rgba(255,255,255,.96);color:#24304a;border-radius:26px;padding:18px;width:min(92vw,420px);box-shadow:0 10px 0 rgba(0,0,0,.18),0 20px 40px rgba(0,0,0,.25);text-align:center}
 .title{font-size:clamp(40px,12.5vw,60px);font-weight:900;letter-spacing:-3px;line-height:1.05;color:#fff;text-shadow:0 4px 0 #1e5bb8,0 8px 0 rgba(0,0,0,.2);white-space:nowrap}
 .title span{color:#ffd54f}
@@ -101,6 +101,27 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
 #overTitle{font-size:24px;font-weight:900;letter-spacing:-1px;white-space:nowrap}
 #toast{position:fixed;left:50%;bottom:22%;transform:translateX(-50%);background:rgba(20,30,60,.88);padding:10px 16px;border-radius:14px;font-weight:900;font-size:15px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:30;white-space:nowrap}
 #toast.show{opacity:1}
+/* 가로 화면 (갤럭시탭 등) */
+@media (orientation:landscape){
+  #menu{flex-direction:row;gap:28px;justify-content:center}
+  #menu .title{font-size:clamp(40px,6vw,64px)}
+  #menu>.ttl{display:flex;flex-direction:column;align-items:center}
+  #menu .panel{margin-top:0!important;width:min(46vw,440px)}
+  .cbtn{width:min(22vw,190px);height:min(22vw,150px);max-height:150px}
+  #ctrl{padding-left:max(24px,env(safe-area-inset-left));padding-right:max(24px,env(safe-area-inset-right))}
+}
+@media (orientation:landscape) and (max-height:560px){
+  #preview{width:110px;height:125px}
+  .big{padding:11px 10px;font-size:18px;margin-top:7px}
+  .panel{padding:12px}
+  #banner{top:22%}
+  .cbtn{height:min(28vh,120px)}
+}
+.rtabs{display:flex;gap:6px;margin-top:8px}
+.rtabs button{flex:1;padding:9px 0;border-radius:12px;background:#eef3ff;color:#6b7896;font-weight:900;font-size:14px;letter-spacing:-.4px}
+.rtabs button.on{background:#1e88e5;color:#fff}
+#regName{width:100%;font-size:22px;font-weight:900;text-align:center;padding:12px;border-radius:14px;border:3px solid #cfd8ea;margin-top:10px;font-family:inherit;color:#24304a}
+#regName:focus{outline:none;border-color:#1e88e5}
 </style>
 </head>
 <body>
@@ -130,8 +151,8 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
 
 <!-- MENU -->
 <div id="menu" class="screen">
-  <div class="title">무한의 <span>계단</span></div>
-  <div class="sub">끝없이 올라가 보자!</div>
+  <div class="ttl"><div class="title">무한의 <span>계단</span></div>
+  <div class="sub">끝없이 올라가 보자!</div></div>
   <div class="panel" style="margin-top:14px">
     <div class="stat">
       <div class="chip">🏆 최고 <span id="mBest">0</span>계단</div>
@@ -174,7 +195,8 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
 <!-- RECORDS -->
 <div id="rec" class="screen hide">
   <div class="panel">
-    <div id="overTitle">🏆 나의 기록</div>
+    <div id="overTitle">🏆 기록</div>
+    <div class="rtabs" id="recTabs"><button data-t="me">📒 내 기록</button><button data-t="r0">🌍 랭킹 · 기본</button><button data-t="r1">🌍 랭킹 · 시간</button></div>
     <ul id="recList"></ul>
     <button class="big b-gray" id="recBack">돌아가기</button>
   </div>
@@ -191,6 +213,7 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
       <div class="chip"><span class="coin"></span>+<span id="oCoin">0</span></div>
     </div>
     <div class="row"><button class="big b-pink" id="btnCont">▶ 이어하기</button><button class="big b-go" id="btnRetry">↻ 다시 하기</button></div>
+    <button class="big b-blue" id="btnReg">🏅 랭킹에 이름 올리기</button>
     <div class="row">
       <button class="big b-org" id="oShop">🧍 캐릭터</button>
       <button class="big b-gray" id="oMenu">🏠 처음으로</button>
@@ -226,6 +249,20 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
   </div>
 </div>
 <input id="photoIn" type="file" accept="image/*" class="hide">
+<div id="reg" class="screen hide" style="z-index:26">
+  <div class="panel">
+    <div style="font-size:22px;font-weight:900;letter-spacing:-.5px;white-space:nowrap">🏅 랭킹 등록</div>
+    <div id="regInfo" style="font-weight:800;color:#6b7896;margin-top:4px;white-space:nowrap">120계단 · 기본</div>
+    <input id="regName" maxlength="10" placeholder="이름을 써 주세요" autocomplete="off">
+    <div class="row"><button class="big b-gray" id="regCancel">취소</button><button class="big b-go" id="regOk">등록하기</button></div>
+  </div>
+</div>
+<div id="exitAsk" class="screen hide" style="z-index:40">
+  <div class="panel">
+    <div style="font-size:24px;font-weight:900;letter-spacing:-.5px;white-space:nowrap">게임을 종료하시겠습니까?</div>
+    <div class="row" style="margin-top:6px"><button class="big b-go" id="exitNo">계속하기</button><button class="big b-gray" id="exitYes">종료</button></div>
+  </div>
+</div>
 <div id="toast"></div>
 
 <script>
@@ -237,7 +274,7 @@ let W=0,H=0,DPR=1,S=60,SH=30;
 function resize(){
   DPR=Math.min(2,window.devicePixelRatio||1); W=innerWidth; H=innerHeight;
   cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
-  S=Math.max(46,Math.min(W/6.2,H/10.5,88)); SH=S*0.5;
+  S=W>H ? Math.max(40,Math.min(W/8,H/8.5,112)) : Math.max(46,Math.min(W/6.2,H/10.5,88)); SH=S*0.5;
 }
 addEventListener('resize',resize); resize();
 const rand=(a,b)=>a+Math.random()*(b-a);
@@ -1167,6 +1204,7 @@ function startGame(){
 function gameOver(){
   state='over';
   $('hud').classList.add('hide'); $('hurry').style.opacity=0;
+  lastGame={score,mode:isTA()?1:0,diff:save.diff,char:save.sel}; regDone=false; $('btnReg').style.opacity=1;
   const bk=isTA()?'bestTA':'best';
   const isNew=score>(save[bk]||0) && score>0;
   if(isNew) save[bk]=score;
@@ -1191,6 +1229,7 @@ function continueGame(){
   const c=contCost();
   if(c>save.coins){ toast(`코인이 ${c-save.coins}개 부족해요`); return; }
   save.coins-=c; conts++;
+  lastGame=null;
   if(lastRec){ const k=save.records.indexOf(lastRec); if(k>=0) save.records.splice(k,1); lastRec=null; }
   persist(); ac(); SFX.buy();
   P.fall=null; P.t0=-1; P.to={x:wx(P.i),y:wy(P.i)}; P.from={...P.to};
@@ -1271,13 +1310,7 @@ function openModal(c,text,btns,lock){ modalChar=c; modalLock=!!lock; $('mText').
 function closeModal(){ $('modal').classList.add('hide'); modalChar=null; }
 (function modalLoop(){ if(modalChar && !$('modal').classList.contains('hide')){ const G=$('mCanvas').getContext('2d'); G.clearRect(0,0,300,340); drawChar(G,modalChar,150,322-Math.abs(Math.sin(now*4))*10,250,1,Math.sin(now*7)*0.3,now); if(modalLock){G.globalCompositeOperation='source-atop';G.fillStyle='rgba(20,20,40,.85)';G.fillRect(0,0,300,340);G.globalCompositeOperation='source-over';} } requestAnimationFrame(modalLoop); })();
 
-function showRec(){
-  const ul=$('recList'); ul.innerHTML='';
-  if(!save.records.length) ul.innerHTML='<li style="justify-content:center;color:#7a86a3">아직 기록이 없어요. 도전해 보세요!</li>';
-  save.records.forEach((r,i)=>{ const li=document.createElement('li'); const nm=(CMAP[r.c]||CHARS[0]).name;
-    li.innerHTML=`<span class="rk">${['🥇','🥈','🥉'][i]||i+1}</span><span class="sc">${r.s}계단</span><span class="cn">${nm} · ${r.ta?'⏱':'🪜'} ${DIFF[r.m||0].name} · ${r.d}</span>`; ul.appendChild(li); });
-  show('rec');
-}
+function showRec(){ recTab='me'; renderRec(); show('rec'); }
 
 // 입력
 function bindBtn(el,fn){ el.addEventListener('pointerdown',e=>{e.preventDefault();el.classList.add('down');fn();}); ['pointerup','pointerleave','pointercancel'].forEach(t=>el.addEventListener(t,()=>el.classList.remove('down'))); }
@@ -1353,6 +1386,73 @@ $('cropDel').onclick=()=>{ delete faceData[crop.id]; saveFaces(); loadFace(crop.
 $('btnPhotoDel').onclick=()=>{ const c=CMAP[save.sel], fk=c.photoKey||c.id; SFX.click();
   const who=fk==='rian'?'리안이(모든 리안 캐릭터)':c.name;
   openModal(c,`${who} 얼굴 사진을 지울까요?`,[{t:'아니요',cls:'b-gray',fn:closeModal},{t:'지울래요',cls:'b-org',fn:()=>{delete faceData[fk]; saveFaces(); loadFace(fk); closeModal(); refreshMenu(); toast('그림 얼굴로 돌아갔어요');}}]); };
+
+// ===== 온라인 랭킹 (Supabase) =====
+const SB_URL='https://gawbponnvapcdupftyxl.supabase.co/rest/v1/stairs_scores';
+const SB_KEY='sb_publishable_EPi0dxbOZAuwkzbj10mWeQ_JNPd3tFv';
+const SB_H={'apikey':SB_KEY,'Content-Type':'application/json'};
+let lastGame=null, regDone=false;
+async function sbPost(row){ const r=await fetch(SB_URL,{method:'POST',headers:{...SB_H,'Prefer':'return=minimal'},body:JSON.stringify(row)}); if(!r.ok) throw new Error(r.status); }
+async function sbTop(mode){ const r=await fetch(`${SB_URL}?select=name,score,char_id,diff,created_at&mode=eq.${mode}&order=score.desc,created_at.asc&limit=30`,{headers:SB_H}); if(!r.ok) throw new Error(r.status); return r.json(); }
+async function sbRank(mode,score){ const r=await fetch(`${SB_URL}?select=id&mode=eq.${mode}&score=gt.${score}`,{method:'HEAD',headers:{...SB_H,'Prefer':'count=exact'}}); const cr=r.headers.get('content-range')||''; const n=+(cr.split('/')[1]||0); return n+1; }
+async function flushPending(){
+  if(!save.pending||!save.pending.length||!navigator.onLine) return;
+  const left=[]; for(const row of save.pending){ try{ await sbPost(row); }catch(e){ left.push(row); } }
+  if(left.length<save.pending.length) toast('기다리던 랭킹 기록을 올렸어요!');
+  save.pending=left; persist();
+}
+addEventListener('online',flushPending); setTimeout(flushPending,2000);
+$('btnReg').onclick=()=>{
+  if(!lastGame||lastGame.score<1){ toast('1계단 이상 올라야 등록할 수 있어요'); return; }
+  if(regDone){ toast('이번 기록은 이미 등록했어요'); return; }
+  SFX.click(); $('regInfo').textContent=`${lastGame.score}계단 · ${lastGame.mode?'시간 도전':'기본'} · ${DIFF[lastGame.diff].name}`;
+  $('regName').value=save.lastName||''; $('reg').classList.remove('hide'); setTimeout(()=>$('regName').focus(),100);
+};
+$('regCancel').onclick=()=>{ SFX.click(); $('reg').classList.add('hide'); };
+$('regOk').onclick=async()=>{
+  const name=$('regName').value.trim().slice(0,10);
+  if(!name){ toast('이름을 써 주세요'); return; }
+  save.lastName=name; persist();
+  const row={name,score:lastGame.score,mode:lastGame.mode,diff:lastGame.diff,char_id:lastGame.char};
+  $('reg').classList.add('hide'); regDone=true; $('btnReg').style.opacity=0.5;
+  try{ await sbPost(row); SFX.buy(); let rk=''; try{ rk=await sbRank(row.mode,row.score); }catch(e){}
+    toast(rk?`🏅 등록 완료! 전체 ${rk}등이에요`:'🏅 랭킹에 등록했어요!'); }
+  catch(e){ save.pending=save.pending||[]; save.pending.push(row); persist(); toast('인터넷이 연결되면 자동으로 등록돼요'); }
+};
+$('regName').addEventListener('keydown',e=>{ if(e.key==='Enter') $('regOk').click(); e.stopPropagation(); });
+
+let recTab='me';
+async function renderRec(){
+  [...$('recTabs').children].forEach(b=>b.classList.toggle('on',b.dataset.t===recTab));
+  const ul=$('recList'); ul.innerHTML='';
+  if(recTab==='me'){
+    if(!save.records.length) ul.innerHTML='<li style="justify-content:center;color:#7a86a3">아직 기록이 없어요. 도전해 보세요!</li>';
+    save.records.forEach((r,i)=>{ const li=document.createElement('li'); const nm=(CMAP[r.c]||CHARS[0]).name;
+      li.innerHTML=`<span class="rk">${['🥇','🥈','🥉'][i]||i+1}</span><span class="sc">${r.s}계단</span><span class="cn">${nm} · ${r.ta?'⏱':'🪜'} ${DIFF[r.m||0].name} · ${r.d}</span>`; ul.appendChild(li); });
+    return;
+  }
+  ul.innerHTML='<li style="justify-content:center;color:#7a86a3">불러오는 중...</li>';
+  try{
+    const rows=await sbTop(recTab==='r1'?1:0); ul.innerHTML='';
+    if(!rows.length) ul.innerHTML='<li style="justify-content:center;color:#7a86a3">아직 아무도 없어요. 1등을 차지해 보세요!</li>';
+    rows.forEach((r,i)=>{ const li=document.createElement('li'); const nm=(CMAP[r.char_id]||CHARS[0]).name; const d=new Date(r.created_at);
+      const esc=String(r.name).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      li.innerHTML=`<span class="rk">${['🥇','🥈','🥉'][i]||i+1}</span><span class="sc">${esc} <small style="color:#1e88e5">${r.score}계단</small></span><span class="cn">${nm} · ${DIFF[r.diff].name} · ${d.getMonth()+1}/${d.getDate()}</span>`; ul.appendChild(li); });
+  }catch(e){ ul.innerHTML='<li style="justify-content:center;color:#7a86a3;white-space:normal;text-align:center">인터넷이 연결되어 있을 때 볼 수 있어요 📶</li>'; }
+}
+$('recTabs').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; SFX.click(); recTab=b.dataset.t; renderRec(); });
+
+// ===== 뒤로가기 → 종료 확인 =====
+let exitArmed=false, pausedByBack=false;
+function armBack(){ try{ history.pushState({stairs:1},''); exitArmed=true; }catch(e){} }
+addEventListener('popstate',()=>{
+  if(!exitArmed) return;
+  if(state==='play'){ pauseGame(); pausedByBack=true; }
+  $('exitAsk').classList.remove('hide');
+});
+$('exitNo').onclick=()=>{ SFX.click(); $('exitAsk').classList.add('hide'); armBack(); };
+$('exitYes').onclick=()=>{ $('exitAsk').classList.add('hide'); exitArmed=false; persist(); try{ window.close(); }catch(e){} history.back(); };
+addEventListener('pointerdown',function once(){ armBack(); removeEventListener('pointerdown',once); },{once:true});
 
 // 시작
 resetGame(); refreshMenu(); show('menu'); requestAnimationFrame(frame);
