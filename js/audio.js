@@ -101,6 +101,23 @@ export const sfx = {
   whoosh() { noise(0.12, 'bandpass', 800, 0.8, 0.12, 0, 0.05); },
   thud() { tone(80, 0.15, 0.5, 'sine', 0, 40); noise(0.08, 'lowpass', 400, 1, 0.4); },
   combo(level) { tone(600 + level * 80, 0.1, 0.12, 'square', 0, 900 + level * 80); },
+  punch() { tone(140, 0.09, 0.6, 'sine', 0, 60); noise(0.06, 'bandpass', 900, 1, 0.5); },
+  swing(heavy = false) { noise(heavy ? 0.22 : 0.14, 'bandpass', heavy ? 500 : 900, 0.9, heavy ? 0.28 : 0.18, 0, 0.06); },
+  explosion() {
+    if (!ctx) return;
+    tone(65, 1.4, 1.0, 'sine', 0, 22);
+    tone(40, 1.0, 0.8, 'triangle', 0, 20);
+    noise(1.6, 'lowpass', 900, 0.6, 1.0, 0, 0.005);
+    noise(0.5, 'bandpass', 2500, 0.5, 0.5);
+    for (let i = 0; i < 12; i++) noise(0.09, 'bandpass', 500 + Math.random() * 3000, 2, 0.25, 0.15 + Math.random() * 0.9);
+  },
+  fuse() { noise(0.08, 'highpass', 5000, 1, 0.08); },
+  throwBomb() { noise(0.2, 'bandpass', 700, 0.8, 0.2, 0, 0.05); tone(300, 0.15, 0.08, 'triangle', 0, 180); },
+  laser() { tone(1900 + Math.random() * 300, 0.07, 0.07, 'sawtooth', 0, 500); },
+  sizzle() { noise(0.1, 'highpass', 3500, 1, 0.12); },
+  water() { noise(0.6, 'bandpass', 700, 0.7, 0.5); for (let i = 0; i < 6; i++) tone(300 + Math.random() * 500, 0.08, 0.08, 'sine', Math.random() * 0.4, 900); },
+  pry() { tone(220, 0.2, 0.25, 'sawtooth', 0, 90); noise(0.15, 'bandpass', 1500, 2, 0.4); },
+  unlock() { [660, 880, 1320].forEach((f, i) => tone(f, 0.18, 0.15, 'triangle', i * 0.07)); },
   tick() { tone(1200, 0.05, 0.12, 'square'); },
   ui() { tone(700, 0.06, 0.12, 'triangle', 0, 1000); },
   locked() { tone(300, 0.12, 0.15, 'square', 0, 200); },
