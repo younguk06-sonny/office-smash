@@ -270,9 +270,25 @@ const CHARS=[
  {id:'idol',name:'아이돌',skin:'#ffe3c8',shirt:'#212121',pants:'#7b1fa2',hat:'longhair',hat2:'headphones',hairC:'#f06292',hatC:'#00e5ff',face:'cute',det:'star',detC:'#ff4081',trail:'heart',price:120},
  {id:'grad',name:'졸업생',skin:'#ffd2a8',shirt:'#212121',pants:'#212121',hat:'grad',face:'happy',det:'tie',detC:'#1e88e5',price:60},
  {id:'runner',name:'마라토너',skin:'#e8b88a',shirt:'#00bcd4',pants:'#212121',hat:'hair',hat2:'headband',hairC:'#212121',hatC:'#e53935',face:'cool',det:'number',trail:'speed',price:80},
- {id:'mermaid',name:'인어',skin:'#ffe3c8',shirt:'#ab47bc',pants:'#26c6da',hat:'longhair',hat2:'flower',hairC:'#ff7043',hatC:'#ff80ab',face:'cute',dress:'#26a69a',trail:'bubble',price:120},
+ {id:'mermaid',name:'인어',skin:'#ffe3c8',shirt:'#f48fb1',pants:'#ffab91',hat:'longhair',hat2:'flower',hairC:'#b39ddb',hatC:'#ffeb3b',face:'cute',dress:'#ff8a80',trail:'bubble',price:120},
  {id:'cowboy',name:'카우보이',skin:'#ffd2a8',shirt:'#c62828',pants:'#1565c0',hat:'cowboy',hatC:'#8d6e63',face:'smile',det:'belt',detC:'#5d4037',price:80},
  {id:'unicorn',name:'유니콘',skin:'#fff6f0',shirt:'#e1bee7',pants:'#ba68c8',hat:'unicorn',face:'cute',det:'heart',detC:'#ff80ab',trail:'rainbow',price:180},
+ // ── 파스텔 동물 친구들 ──
+ {id:'hamster',name:'딸기 햄스터',skin:'#fff1e0',shirt:'#ffcdd2',pants:'#ef9a9a',hat:'hood',hat2:'strawberry',hatC:'#ffcc80',face:'cute',det:'heart',detC:'#e53935',trail:'heart',price:60},
+ {id:'sheep',name:'구름 양',skin:'#fff8ee',shirt:'#b3e5fc',pants:'#81d4fa',hat:'sheep',face:'happy',det:'star',detC:'#ffffff',trail:'bubble',price:60},
+ {id:'peachbear',name:'복숭아 곰',skin:'#ffccbc',shirt:'#ffab91',pants:'#ff8a65',hat:'bearears',hatC:'#ffab91',face:'cute',det:'heart',detC:'#fff',trail:'heart',price:60},
+ {id:'squirrel',name:'마카롱 다람쥐',skin:'#ffe3c8',shirt:'#b2dfdb',pants:'#f8bbd0',hat:'hair',hat2:'roundears',hairC:'#a1887f',hatC:'#a1887f',face:'cute',det:'buttons',detC:'#f48fb1',ex:['tail'],tailT:'squirrel',exC:'#a1887f',price:70},
+ {id:'alpaca',name:'솜사탕 알파카',skin:'#fff6ec',shirt:'#e1bee7',pants:'#ce93d8',hat:'alpaca',hatC:'#f8bbd0',face:'cute',det:'star',detC:'#fff59d',trail:'rainbow',price:80},
+ {id:'chick',name:'아기 병아리',skin:'#ffe3c8',shirt:'#fff59d',pants:'#ffb74d',hat:'hood',hat2:'chick',hatC:'#ffee58',face:'cute',det:'buttons',detC:'#ff9800',price:50},
+ {id:'koala',name:'구름 코알라',skin:'#cfd8dc',shirt:'#c5cae9',pants:'#7986cb',hat:'bigears',hatC:'#b0bec5',face:'koala',det:'heart',detC:'#f48fb1',price:70},
+ // ── 공주 시리즈 ──
+ {id:'pflower',name:'꽃 공주',skin:'#ffe3c8',shirt:'#a5d6a7',pants:'#a5d6a7',hat:'longhair',hat2:'flowercrown',hairC:'#8d6e63',face:'cute',dress:'#66bb6a',trail:'heart',price:100},
+ {id:'pstar',name:'별빛 공주',skin:'#ffe3c8',shirt:'#3949ab',pants:'#3949ab',hat:'longhair',hat2:'starcrown',hairC:'#eceff1',face:'cute',det:'star',detC:'#ffeb3b',dress:'#283593',trail:'star',price:120},
+ {id:'pcandy',name:'사탕 공주',skin:'#ffe3c8',shirt:'#f8bbd0',pants:'#f8bbd0',hat:'longhair',hat2:'candy',hairC:'#ff80ab',face:'cute',det:'heart',detC:'#ff4081',dress:'#f48fb1',trail:'heart',price:100},
+ {id:'ppearl',name:'진주 공주',skin:'#ffe3c8',shirt:'#ffccbc',pants:'#ffccbc',hat:'longhair',hat2:'pearltiara',hairC:'#5c6bc0',face:'cute',dress:'#ffab91',trail:'bubble',price:120},
+ {id:'prainbow',name:'무지개 공주',skin:'#ffe3c8',shirt:'#ffffff',pants:'#ffffff',hat:'rainbowlong',hat2:'tiara',face:'cute',det:'rainbow',dress:'#fafafa',trail:'rainbow',price:150},
+ {id:'psnow',name:'눈꽃 요정',skin:'#ffe3c8',shirt:'#d1c4e9',pants:'#d1c4e9',hat:'longhair',hat2:'snowcrown',hairC:'#ce93d8',face:'cute',dress:'#b39ddb',ex:['fairywings'],trail:'snow',price:130},
+ {id:'psun',name:'햇님 공주',skin:'#e8b88a',shirt:'#ffb74d',pants:'#ffb74d',hat:'longhair',hat2:'suncrown',hairC:'#212121',face:'cute',dress:'#ff9800',trail:'gold',price:130},
  {id:'rainbow',name:'무지개 눕',skin:'#f2cd37',shirt:'#e53935',pants:'#43a047',face:'happy',det:'rainbow',trail:'rainbow',price:0,best:200},
  {id:'gold',name:'황금 눕',skin:'#ffd54f',shirt:'#ffb300',pants:'#ff8f00',face:'cool',det:'shine',trail:'gold',price:0,best:500},
  {id:'diamond',name:'다이아 눕',skin:'#80deea',shirt:'#26c6da',pants:'#00838f',face:'cool',det:'shine',hat:'crown',trail:'diamond',price:0,best:1000},
@@ -377,6 +393,7 @@ function drawBack(G,c,u,t){
       case 'cape':{const f=Math.sin(t*7)*0.5*u; poly(G,shade(col,-0.25),[-2.0*u,-7.1*u,0.6*u,-7.1*u,-0.4*u,-1.2*u,-3.9*u-f,-0.9*u]); poly(G,col,[-2.0*u,-7.1*u,-0.6*u,-7.1*u,-1.6*u,-1.0*u,-3.9*u-f,-0.9*u]); break;}
       case 'wings':{const f=Math.sin(t*6)*0.15; G.save();G.translate(-1.6*u,-6.4*u);G.rotate(-0.35+f); ell(G,'#e3f2fd',-2.2*u,-0.4*u,2.6*u,1.2*u,0.2); ell(G,'#ffffff',-1.8*u,-0.8*u,2.2*u,1.0*u,0.1); ell(G,'#ffffff',-1.2*u,0.4*u,1.8*u,0.8*u,0.4); G.restore(); break;}
       case 'devilwings':{const f=Math.sin(t*7)*0.15; G.save();G.translate(-1.6*u,-6.2*u);G.rotate(-0.25+f); poly(G,'#4a0e0e',[0,0,-2.0*u,-2.4*u,-4.6*u,-1.8*u,-3.6*u,-0.6*u,-4.2*u,0.6*u,-2.6*u,0.2*u,-2.4*u,1.4*u]); G.restore(); break;}
+      case 'fairywings':{const f=Math.sin(t*10)*0.2; G.globalAlpha=0.7; G.save();G.translate(-1.8*u,-6.6*u);G.rotate(-0.3+f); ell(G,'#e1f5fe',-1.6*u,-0.8*u,1.8*u,1.0*u,-0.4); ell(G,'#f3e5f5',-1.2*u,0.6*u,1.2*u,0.7*u,0.5); G.restore(); G.globalAlpha=1; break;}
       case 'beewings':{const f=Math.abs(Math.sin(t*25)); G.globalAlpha=0.65; ell(G,'#b3e5fc',-3.2*u,-7.4*u,1.4*u,0.9*u*(0.4+f*0.6),-0.5); ell(G,'#e1f5fe',-2.8*u,-6.0*u,1.0*u,0.6*u*(0.4+f*0.6),0.3); G.globalAlpha=1; break;}
       case 'jetpack':{box(G,'#90a4ae',-3.6*u,-7.0*u,1.4*u,3.2*u,0.5*u); box(G,'#607d8b',-3.6*u,-4.2*u,1.4*u,0.5*u,0.2*u); const fl=0.9+Math.sin(t*30)*0.3; poly(G,'#ffab00',[-3.5*u,-3.7*u,-2.3*u,-3.7*u,-2.9*u,(-3.7+1.6*fl)*u]); poly(G,'#fff176',[-3.2*u,-3.7*u,-2.6*u,-3.7*u,-2.9*u,(-3.7+0.9*fl)*u]); break;}
       case 'sword':{G.save();G.translate(-1.4*u,-5.4*u);G.rotate(-0.7); box(G,'#cfd8dc',-0.25*u,-4.6*u,0.5*u,4.0*u,0.2*u); box(G,'#5d4037',-0.3*u,-0.6*u,0.6*u,1.6*u,0.2*u); box(G,'#ffb300',-0.9*u,-0.75*u,1.8*u,0.35*u,0.15*u); G.restore(); break;}
@@ -386,6 +403,7 @@ function drawBack(G,c,u,t){
         G.save(); G.translate(-2.0*u,-3.8*u); G.rotate(w);
         if(c.tailT==='fox'){ell(G,col,-1.6*u,-0.6*u,1.8*u,0.85*u,-0.5); ell(G,'#fff',-3.0*u,-1.5*u,0.6*u,0.5*u,-0.5);}
         else if(c.tailT==='dino'){poly(G,col,[0,-0.9*u,0,0.6*u,-3.4*u,0.6*u]); poly(G,c.hatC2||'#ffca28',[-0.6*u,-0.5*u,-1.0*u,-1.2*u,-1.4*u,-0.2*u]); poly(G,c.hatC2||'#ffca28',[-1.6*u,-0.1*u,-2.0*u,-0.8*u,-2.3*u,0.1*u]);}
+        else if(c.tailT==='squirrel'){ell(G,col,-1.4*u,-2.2*u,1.3*u,2.4*u,-0.3);ell(G,shade(col,0.25),-1.6*u,-2.6*u,0.7*u,1.5*u,-0.3);}
         else if(c.tailT==='devil'){G.strokeStyle='#b71c1c';G.lineWidth=u*0.35;G.lineCap='round';G.beginPath();G.moveTo(0,0);G.quadraticCurveTo(-1.6*u,1.0*u,-2.4*u,-1.2*u);G.stroke(); poly(G,'#b71c1c',[-2.4*u,-1.9*u,-3.0*u,-0.9*u,-1.8*u,-1.0*u]);}
         else {G.strokeStyle=col;G.lineWidth=u*0.55;G.lineCap='round';G.beginPath();G.moveTo(0,0);G.quadraticCurveTo(-2.2*u,0.4*u,-2.2*u,-2.0*u);G.stroke();}
         G.restore(); break;}
@@ -448,6 +466,8 @@ function drawFace(G,c,u,t){
     case 'snow':
       circ(G,'#222',e1,ey,0.24*u);circ(G,'#222',e2,ey,0.24*u); poly(G,'#ff8f00',[0.4*u,-8.5*u,0.4*u,-8.0*u,2.4*u,-8.15*u]);
       for(let i=0;i<5;i++){const a=0.2*Math.PI+i*0.15*Math.PI; circ(G,'#222',mx+Math.cos(a)*0.7*u,my-0.75*u+Math.sin(a)*0.7*u,0.12*u);} break;
+    case 'koala':
+      circ(G,'#222',e1,ey,0.28*u);circ(G,'#222',e2,ey,0.28*u);circ(G,'#fff',e1+0.08*u,ey-0.1*u,0.1*u);circ(G,'#fff',e2+0.08*u,ey-0.1*u,0.1*u);ell(G,'#37474f',mx,my-0.55*u,0.45*u,0.5*u,0);G.globalAlpha=0.45;circ(G,'#ff6b9a',e1-0.4*u,my-0.2*u,0.3*u);circ(G,'#ff6b9a',e2+0.4*u,my-0.2*u,0.3*u);G.globalAlpha=1; break;
     case 'alien':
       ell(G,'#111',e1-0.05*u,ey+0.1*u,0.42*u,0.7*u,0.45); ell(G,'#111',e2+0.05*u,ey+0.1*u,0.42*u,0.7*u,-0.45);
       circ(G,'#fff',e1+0.05*u,ey-0.15*u,0.12*u);circ(G,'#fff',e2+0.15*u,ey-0.15*u,0.12*u); smile(0.3*u); break;
@@ -514,6 +534,24 @@ function drawHat(G,c,u,t,layer){
       case 'headband': if(F){box(G,hc,L-0.15*u,-9.85*u,3.6*u,0.55*u,0.2*u);const f=Math.sin(t*9)*0.3*u;poly(G,hc,[L,-9.8*u,L-1.3*u,-9.9*u+f,L-1.1*u,-9.3*u+f]);} break;
       case 'bow': if(F){poly(G,hc,[L+0.5*u,T+0.1*u,L-0.6*u,T-0.6*u,L-0.6*u,T+0.8*u]);poly(G,hc,[L+0.5*u,T+0.1*u,L+1.6*u,T-0.6*u,L+1.6*u,T+0.8*u]);circ(G,shade(hc,-0.2),L+0.5*u,T+0.1*u,0.3*u);} break;
       case 'flower': if(F){const fx=R-0.4*u,fy=T+0.1*u;for(let i=0;i<5;i++){const a=i*Math.PI*2/5;circ(G,hc,fx+Math.cos(a)*0.38*u,fy+Math.sin(a)*0.38*u,0.3*u);}circ(G,'#ffeb3b',fx,fy,0.22*u);} break;
+      case 'strawberry': if(F){box(G,'#e53935',L+0.1*u,T-1.3*u,3.0*u,1.5*u,0.75*u);G.fillStyle='#fff59d';for(let i=0;i<5;i++)G.fillRect(L+0.5*u+i*0.55*u,T-0.9*u+(i%2)*0.4*u,0.15*u,0.22*u);poly(G,'#43a047',[-0.6*u,T-1.2*u,0.2*u,T-1.9*u,0.9*u,T-1.2*u,0.2*u,T-1.0*u]);box(G,'#2e7d32',0.1*u,T-2.1*u,0.2*u,0.6*u);
+          circ(G,hc,L-0.1*u,T+0.2*u,0.5*u);circ(G,'#ffab91',L-0.1*u,T+0.2*u,0.25*u);} break;
+      case 'sheep':
+        if(B){for(let i=0;i<7;i++){const a=Math.PI*(0.95+i*0.18);circ(G,'#ffffff',Math.cos(a)*2.0*u,cy+Math.sin(a)*2.0*u,0.9*u);} circ(G,'#f5f5f5',L-0.4*u,cy+0.8*u,0.9*u);}
+        if(F){for(let i=0;i<4;i++)circ(G,i%2?'#ffffff':'#fafafa',L+0.3*u+i*0.95*u,T-0.05*u,0.75*u);ell(G,'#ffccbc',L-0.3*u,cy-0.2*u,0.35*u,0.65*u,0.5);} break;
+      case 'roundears': if(F){circ(G,hc,L+0.3*u,T-0.05*u,0.55*u);circ(G,hc,R-0.3*u,T-0.05*u,0.55*u);circ(G,'#ffcdd2',R-0.3*u,T-0.05*u,0.28*u);} break;
+      case 'bigears': if(F){circ(G,hc,L-0.3*u,T+0.6*u,0.95*u);circ(G,'#eceff1',L-0.3*u,T+0.6*u,0.5*u);circ(G,hc,R+0.25*u,T+0.6*u,0.9*u);circ(G,'#eceff1',R+0.25*u,T+0.6*u,0.48*u);} break;
+      case 'alpaca': if(F){ell(G,'#fff6ec',L+0.4*u,T-0.6*u,0.3*u,0.75*u,-0.3);ell(G,'#fff6ec',R-0.5*u,T-0.6*u,0.3*u,0.75*u,0.3);for(let i=0;i<5;i++)circ(G,i%2?hc:shade(hc,0.3),L+0.4*u+i*0.62*u,T-0.15*u-(i%2)*0.35*u,0.62*u);circ(G,'#ce93d8',0.3*u,T-0.95*u,0.5*u);} break;
+      case 'chick': if(F){G.strokeStyle=hc;G.lineWidth=u*0.3;G.lineCap='round';G.beginPath();G.moveTo(0.2*u,T-0.2*u);G.quadraticCurveTo(0,T-1.2*u,-0.5*u,T-1.3*u);G.moveTo(0.4*u,T-0.2*u);G.quadraticCurveTo(0.6*u,T-1.2*u,1.0*u,T-1.2*u);G.stroke();poly(G,'#ff9800',[0.65*u,-8.1*u,1.55*u,-8.1*u,1.1*u,-7.55*u]);} break;
+      case 'flowercrown': if(F){const cols=['#f06292','#ffeb3b','#ba68c8','#ff8a65','#f06292'];for(let i=0;i<5;i++){const fx=L+0.15*u+i*0.75*u,fy=T-0.05*u;for(let k=0;k<5;k++){const a=k*Math.PI*0.4;circ(G,cols[i],fx+Math.cos(a)*0.22*u,fy+Math.sin(a)*0.22*u,0.2*u);}circ(G,'#fff59d',fx,fy,0.13*u);} ell(G,'#66bb6a',L-0.1*u,T+0.15*u,0.35*u,0.15*u,0.4);} break;
+      case 'starcrown': if(F){box(G,'#cfd8dc',L,T-0.15*u,3.3*u,0.4*u,0.2*u);star(G,'#fff59d',0.3*u,T-0.75*u,0.75*u);star(G,'#e3f2fd',L+0.4*u,T-0.4*u,0.35*u);star(G,'#e3f2fd',R-0.4*u,T-0.4*u,0.35*u);} break;
+      case 'candy': if(F){for(const cx2 of [L-0.1*u,R+0.1*u]){circ(G,'#ffffff',cx2,T+0.1*u,0.7*u);G.strokeStyle='#ff4081';G.lineWidth=u*0.18;G.beginPath();for(let a=0;a<12;a+=0.3){const r=a*0.05*u;G.lineTo(cx2+Math.cos(a)*r,T+0.1*u+Math.sin(a)*r);}G.stroke();} poly(G,'#ff80ab',[0.1*u,T-0.1*u,-0.6*u,T-0.6*u,-0.6*u,T+0.4*u]);poly(G,'#ff80ab',[0.1*u,T-0.1*u,0.8*u,T-0.6*u,0.8*u,T+0.4*u]);circ(G,'#f50057',0.1*u,T-0.1*u,0.22*u);} break;
+      case 'pearltiara': if(F){for(let i=0;i<7;i++){const a=Math.PI*(1.1+i*0.13);circ(G,'#fffde7',0.1*u+Math.cos(a)*1.6*u,T+0.6*u+Math.sin(a)*1.0*u,0.22*u);} ell(G,'#ffffff',0.1*u,T-0.6*u,0.45*u,0.38*u,0);circ(G,'#ffffff',-0.05*u,T-0.7*u,0.12*u);} break;
+      case 'snowcrown': if(F){G.strokeStyle='#ffffff';G.lineWidth=u*0.2;G.lineCap='round';const fx=0.3*u,fy=T-0.7*u;for(let k=0;k<6;k++){const a=k*Math.PI/3;G.beginPath();G.moveTo(fx,fy);G.lineTo(fx+Math.cos(a)*0.7*u,fy+Math.sin(a)*0.7*u);G.stroke();} box(G,'#e1bee7',L,T-0.1*u,3.3*u,0.35*u,0.15*u);} break;
+      case 'suncrown': if(F){for(let k=0;k<7;k++){const a=Math.PI*(1.1+k*0.13);poly(G,'#ffd600',[0.1*u+Math.cos(a-0.08)*1.4*u,T+0.5*u+Math.sin(a-0.08)*1.1*u,0.1*u+Math.cos(a)*2.2*u,T+0.5*u+Math.sin(a)*1.8*u,0.1*u+Math.cos(a+0.08)*1.4*u,T+0.5*u+Math.sin(a+0.08)*1.1*u]);} circ(G,'#ff6d00',0.1*u,T-0.35*u,0.35*u);} break;
+      case 'rainbowlong':
+        if(B){for(let i=0;i<6;i++) box(G,RAINBOW[i],L-0.45*u+i*0.0,T+0.1*u+i*0.8*u,2.2*u,1.0*u,0.45*u);}
+        if(F){for(let i=0;i<3;i++) box(G,RAINBOW[i],L-0.15*u,T-0.4*u+i*0.42*u,3.6*u,0.6*u,0.3*u); for(let i=0;i<5;i++) box(G,RAINBOW[i],L-0.2*u,T+i*0.68*u,1.15*u,0.75*u,0.3*u);} break;
       case 'bee': if(F){G.strokeStyle='#212121';G.lineWidth=u*0.18;G.beginPath();G.moveTo(-0.3*u,T);G.quadraticCurveTo(-0.6*u,T-1.0*u,-1.0*u,T-1.3*u);G.moveTo(0.9*u,T);G.quadraticCurveTo(1.2*u,T-1.0*u,1.6*u,T-1.3*u);G.stroke();circ(G,'#212121',-1.0*u,T-1.35*u,0.3*u);circ(G,'#212121',1.6*u,T-1.35*u,0.3*u);} break;
     }
   }
