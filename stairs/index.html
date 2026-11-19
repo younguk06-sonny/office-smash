@@ -224,15 +224,17 @@ const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 
 /* ================= 저장 ================= */
 const SKEY='infinite_stairs_v1';
-const save={coins:0,owned:['noob','rian','bacon'],sel:'noob',best:0,records:[],diff:0,sound:true,music:true,games:0};
+const save={coins:0,owned:['noob','rian','dungi','bacon'],sel:'noob',best:0,records:[],diff:0,sound:true,music:true,games:0};
 try{const s=JSON.parse(localStorage.getItem(SKEY)); if(s) Object.assign(save,s);}catch(e){}
+if(!save.owned.includes('dungi')) save.owned.push('dungi');
 function persist(){try{localStorage.setItem(SKEY,JSON.stringify(save));}catch(e){}}
 
 /* ================= 캐릭터 ================= */
 // hat/hat2: 머리 장식, face: 표정, ex: 등/몸 장식, det: 옷 무늬, trail: 오를 때 효과
 const CHARS=[
  {id:'noob',name:'눕',skin:'#f2cd37',shirt:'#1e88e5',pants:'#43a047',face:'smile',price:0},
- {id:'rian',name:'리안',skin:'#ffdcc0',shirt:'#ff6fa5',pants:'#8e5bd6',hat:'longhair',hat2:'bow',hairC:'#4a2c1a',hatC:'#ff3d7f',face:'cute',det:'heart',detC:'#fff',trail:'heart',price:0},
+ {id:'rian',name:'리안',skin:'#ffe1c9',shirt:'#e8282b',pants:'#3b6aa8',hat:'rianhair',hairC:'#2a1b14',face:'rian',det:'hoodie92',trail:'heart',price:0},
+ {id:'dungi',name:'둥이',dog:true,fur:'#d9a273',trail:'heart',price:0},
  {id:'bacon',name:'베이컨',skin:'#ffd2a8',shirt:'#263238',pants:'#1565c0',hat:'bacon',hairC:'#7a4320',face:'smile',price:0},
  {id:'cat',name:'고양이',skin:'#ffe3c8',shirt:'#ffb74d',pants:'#6d4c41',hat:'hair',hat2:'catears',hairC:'#ff9800',hatC:'#ff9800',face:'cat',ex:['tail'],tailT:'cat',exC:'#ff9800',price:30},
  {id:'bunny',name:'토끼',skin:'#fff6f0',shirt:'#f8bbd0',pants:'#ec407a',hat:'bunny',hatC:'#ffffff',face:'cute',det:'buttons',detC:'#ec407a',price:30},
@@ -305,8 +307,9 @@ function poly(G,col,pts){G.fillStyle=col;G.beginPath();G.moveTo(pts[0],pts[1]);f
 const shadeCache={};
 function shade(hex,amt){
   const k=hex+amt; if(shadeCache[k]) return shadeCache[k];
-  let c=hex.replace('#',''); if(c.length===3) c=c.split('').map(ch=>ch+ch).join('');
-  const n=parseInt(c,16); let r=n>>16,gg=n>>8&255,b=n&255;
+  let r,gg,b;
+  if(hex[0]==='r'){ const m=hex.match(/\d+/g); r=+m[0]; gg=+m[1]; b=+m[2]; }
+  else { let c=hex.replace('#',''); if(c.length===3) c=c.split('').map(ch=>ch+ch).join(''); const n=parseInt(c,16); r=n>>16; gg=n>>8&255; b=n&255; }
   if(amt<0){r*=1+amt;gg*=1+amt;b*=1+amt;} else {r+=(255-r)*amt;gg+=(255-gg)*amt;b+=(255-b)*amt;}
   return shadeCache[k]=`rgb(${r|0},${gg|0},${b|0})`;
 }
@@ -316,8 +319,10 @@ const RAINBOW=['#ff5252','#ffab40','#ffeb3b','#69f0ae','#40c4ff','#b388ff'];
 
 /* ================= 캐릭터 그리기 =================
    (x,y)=발 위치, s=키, face=1(오른쪽)/-1(왼쪽), walk=걷기 위상(-1~1), t=시간 */
+let curFace=1;
 function drawChar(G,c,x,y,s,face,walk,t){
-  const u=s/10;
+  const u=s/10; curFace=face;
+  if(c.dog){ G.save(); G.translate(x,y); G.scale(face,1); drawDog(G,c,u*1.05,t,walk); G.restore(); return; }
   G.save(); G.translate(x,y); G.scale(face,1);
   const legA=walk*u*0.9, armA=walk*0.7;
   drawBack(G,c,u,t);
@@ -353,6 +358,44 @@ function drawChar(G,c,x,y,s,face,walk,t){
   drawHat(G,c,u,t,'front');
   G.restore();
 }
+
+/* 둥이: 곱슬곱슬 토이푸들 */
+function curly(G,col,x,y,rx,ry,n,seed){
+  ell(G,col,x,y,rx,ry,0);
+  for(let k=0;k<n;k++){ const a=k/n*Math.PI*2+seed, rr=0.85+0.15*Math.sin(k*2.3+seed); circ(G,k%2?col:shade(col,0.12),x+Math.cos(a)*rx*rr,y+Math.sin(a)*ry*rr,Math.min(rx,ry)*0.32); }
+  for(let k=0;k<n*0.6;k++){ const a=k*2.4+seed, r=0.5*((k*37)%10)/10; circ(G,shade(col,(k%3-1)*0.08),x+Math.cos(a)*rx*r,y+Math.sin(a)*ry*r,Math.min(rx,ry)*0.22); }
+}
+function drawDog(G,c,u,t,walk){
+  const f=c.fur, dk=shade(f,-0.18), lt=shade(f,0.15);
+  const lw=walk*u*0.8;
+  // 꼬리 (방울)
+  circ(G,dk,-3.0*u,-5.6*u+Math.sin(t*12)*0.25*u,0.75*u); circ(G,lt,-3.1*u,-5.8*u+Math.sin(t*12)*0.25*u,0.5*u);
+  // 뒷다리 (먼쪽)
+  box(G,dk,-2.2*u+lw*0.3,-3.0*u,0.9*u,3.0*u,0.4*u); box(G,dk,1.0*u-lw*0.3,-3.0*u,0.9*u,3.0*u,0.4*u);
+  // 몸통
+  curly(G,f,-0.3*u,-3.9*u,2.6*u,1.45*u,14,0.4);
+  // 앞다리 (가까운쪽)
+  box(G,f,-1.6*u-lw*0.3,-2.9*u,0.95*u,2.9*u,0.45*u); box(G,f,1.5*u+lw*0.3,-2.9*u,0.95*u,2.9*u,0.45*u);
+  circ(G,lt,-1.12*u-lw*0.3,-0.3*u,0.5*u); circ(G,lt,1.97*u+lw*0.3,-0.3*u,0.5*u);
+  // 목
+  curly(G,f,1.6*u,-5.4*u,1.0*u,1.3*u,8,1.1);
+  // 머리
+  const hx=1.9*u, hy=-7.2*u;
+  curly(G,f,hx,hy,1.55*u,1.4*u,12,2.0);
+  curly(G,lt,hx-0.2*u,hy-1.25*u,0.95*u,0.6*u,8,0.7); // 정수리 곱슬
+  // 귀 (축 늘어진 귀)
+  G.save(); G.translate(hx-1.0*u,hy-0.3*u); G.rotate(0.25+Math.sin(t*3)*0.05); curly(G,shade(f,-0.28),0,1.0*u,0.65*u,1.35*u,8,0.3); G.restore();
+  // 주둥이
+  curly(G,shade(f,0.3),hx+1.35*u,hy+0.45*u,0.85*u,0.6*u,7,0.9);
+  ell(G,'#2b2220',hx+2.05*u,hy+0.2*u,0.33*u,0.27*u,0); circ(G,'rgba(255,255,255,.6)',hx+2.0*u,hy+0.1*u,0.08*u);
+  G.strokeStyle='#5d4037'; G.lineWidth=u*0.12; G.lineCap='round'; G.beginPath(); G.moveTo(hx+1.95*u,hy+0.5*u); G.quadraticCurveTo(hx+1.6*u,hy+0.85*u,hx+1.15*u,hy+0.7*u); G.stroke();
+  // 눈
+  const bl=((t*1.1)%4)<0.08;
+  if(bl){ box(G,'#1b1210',hx+0.15*u,hy-0.35*u,0.5*u,0.12*u); box(G,'#1b1210',hx+0.95*u,hy-0.4*u,0.45*u,0.12*u); }
+  else { circ(G,'#1b1210',hx+0.4*u,hy-0.3*u,0.3*u); circ(G,'#1b1210',hx+1.15*u,hy-0.35*u,0.27*u); circ(G,'#fff',hx+0.48*u,hy-0.4*u,0.1*u); circ(G,'#fff',hx+1.22*u,hy-0.45*u,0.09*u); }
+  // 볼터치
+  G.globalAlpha=0.3; circ(G,'#ff6b9a',hx+0.5*u,hy+0.45*u,0.3*u); G.globalAlpha=1;
+}
 function arm(G,c,ax,ay,ang,u,back){
   G.save(); G.translate(ax,ay); G.rotate(ang);
   const sh=back?shade(c.shirt,-0.25):c.shirt, sk=back?shade(c.skin,-0.2):c.skin;
@@ -365,6 +408,14 @@ function shirtDetail(G,c,u,t){
   const d=c.det, dc=c.detC||'#fff';
   G.save(); rr(G,-2.25*u,-7.2*u,4.5*u,3.8*u,0.4*u); G.clip();
   switch(d){
+    case 'hoodie92':
+      box(G,'#fbf6ee',-1.0*u,-7.25*u,2.6*u,0.55*u,0.25*u);
+      G.strokeStyle='#b71c1c'; G.lineWidth=u*0.13; G.beginPath(); G.moveTo(0.0*u,-6.8*u); G.lineTo(-0.15*u,-5.6*u); G.moveTo(1.0*u,-6.8*u); G.lineTo(1.15*u,-5.6*u); G.stroke();
+      G.save(); G.translate(0.5*u,-5.0*u); if(curFace<0) G.scale(-1,1);
+      G.font=`900 ${1.5*u}px sans-serif`; G.textAlign='center'; G.textBaseline='middle'; G.lineWidth=u*0.25; G.strokeStyle='#fbf6ee'; G.strokeText('92',0,0); G.fillStyle='#1f2a5a'; G.fillText('92',0,0);
+      G.restore();
+      G.strokeStyle='#fbf6ee'; G.lineWidth=u*0.18; G.beginPath(); G.arc(0.5*u,-4.4*u,1.7*u,Math.PI*1.25,Math.PI*1.75); G.stroke();
+      box(G,shade('#e8282b',-0.12),-0.6*u,-4.25*u,2.2*u,0.7*u,0.3*u); break;
     case 'stripe': box(G,dc,-2.3*u,-6.4*u,4.6*u,0.6*u); box(G,dc,-2.3*u,-5.0*u,4.6*u,0.6*u); break;
     case 'belt': box(G,dc,-2.3*u,-4.5*u,4.6*u,0.6*u); box(G,'#ffd54f',0.1*u,-4.6*u,0.8*u,0.8*u,0.15*u); break;
     case 'star': star(G,dc,0.5*u,-5.4*u,1.0*u); break;
@@ -424,6 +475,12 @@ function drawFace(G,c,u,t){
   const eyes=(w,h)=>{ if(blink){box(G,'#222',e1-w/2,ey,w,u*0.14);box(G,'#222',e2-w/2,ey,w,u*0.14);} else {box(G,'#222',e1-w/2,ey-h/2,w,h,w/2);box(G,'#222',e2-w/2,ey-h/2,w,h,w/2);} };
   const smile=(r)=>{G.beginPath();G.arc(mx,my-0.5*u,r||0.62*u,0.18*Math.PI,0.82*Math.PI);G.stroke();};
   switch(c.face){
+    case 'rian':
+      G.beginPath();G.arc(e1,ey+0.25*u,0.33*u,Math.PI*1.15,Math.PI*1.85);G.stroke();
+      G.beginPath();G.arc(e2,ey+0.25*u,0.33*u,Math.PI*1.15,Math.PI*1.85);G.stroke();
+      G.globalAlpha=0.4;circ(G,'#ff7a8a',e1-0.45*u,my-0.3*u,0.33*u);circ(G,'#ff7a8a',e2+0.45*u,my-0.3*u,0.33*u);G.globalAlpha=1;
+      G.fillStyle='#8a2a2a';G.beginPath();G.moveTo(mx-0.6*u,my-0.45*u);G.quadraticCurveTo(mx,my+0.35*u,mx+0.6*u,my-0.45*u);G.closePath();G.fill();
+      box(G,'#fff',mx-0.48*u,my-0.45*u,0.96*u,0.22*u,0.08*u); break;
     case 'smile': eyes(0.34*u,0.66*u); smile(); break;
     case 'happy':
       G.beginPath();G.arc(e1,ey+0.2*u,0.32*u,Math.PI*1.1,Math.PI*1.9);G.stroke();
@@ -480,6 +537,10 @@ function drawHat(G,c,u,t,layer){
   for(const h of list){ if(!h) continue;
     const F=layer==='front', B=layer==='back';
     switch(h){
+      case 'rianhair':
+        if(B){ box(G,hair,L-0.6*u,T+0.1*u,1.9*u,5.2*u,0.9*u); }
+        if(F){ box(G,hair,L-0.15*u,T-0.4*u,3.6*u,1.0*u,0.6*u); G.strokeStyle=shade(hair,0.25); G.lineWidth=u*0.1; G.beginPath(); G.moveTo(0.35*u,T-0.38*u); G.lineTo(0.35*u,T+0.4*u); G.stroke();
+          box(G,hair,L-0.2*u,T,1.0*u,3.8*u,0.45*u); poly(G,hair,[R-0.15*u,T+0.4*u,R+0.25*u,T+0.3*u,R+0.3*u,T+3.6*u,R+0.0*u,T+3.3*u]); } break;
       case 'hair': if(F){box(G,hair,L-0.12*u,T-0.35*u,3.55*u,1.15*u,0.55*u);box(G,hair,L-0.12*u,T,1.05*u,2.3*u,0.35*u);} break;
       case 'longhair':
         if(B){box(G,shade(hair,-0.1),L-0.45*u,T+0.1*u,2.2*u,5.0*u,0.8*u);}
@@ -717,22 +778,25 @@ function drawGround(){
 function drawTown(){
   const base=H*0.6+(SH-cam.y)*0.45+S*0.4;
   const k=0.56, s0=S;
-  if(base-S*k*16>H) return;
   const ox=-cam.x*0.08;
-  S=s0*k;
-  apt(W*0.47+ox,base,S*2.4,S*13.5,'101');
-  apt(W*0.79+ox,base,S*2.4,S*12.5,'103');
-  apt(W*0.63+ox,base,S*2.4,S*15.5,'102');
-  school(W*0.03+ox,base);
+  // 아파트는 화면 아래에 멈춰서 게임 끝까지 보이게
+  const abase=Math.min(base,H+S*k*5);
+  const night=clamp((Math.max(score,P.i)-380)/120,0,1);
+  S=s0*k; aptNight=night;
+  apt(W*0.47+ox,abase,S*2.4,S*13.5,'101');
+  apt(W*0.79+ox,abase,S*2.4,S*12.5,'103');
+  apt(W*0.63+ox,abase,S*2.4,S*15.5,'102');
+  if(base-S*6<H) school(W*0.03+ox,base);
   S=s0;
   if(base<H){ g.fillStyle='#a5d66f'; g.fillRect(0,base,W,H-base); g.fillStyle='#8bc34a'; g.fillRect(0,base,W,S*0.12); }
 }
+let aptNight=0;
 function apt(x,gy,w,h,dong){
   if(x+w<-10||x>W+10||gy-h>H) return;
   const top=gy-h;
   box(g,'rgba(0,0,0,.12)',x+6,top+6,w,h);
-  box(g,'#fbfaf5',x,top,w,h,3);
-  box(g,'#e4e1d6',x,top,w*0.18,h,3);
+  box(g,aptNight>0.5?'#c9c6d8':'#fbfaf5',x,top,w,h,3);
+  box(g,aptNight>0.5?'#a9a6bd':'#e4e1d6',x,top,w*0.18,h,3);
   // 녹색 포인트 (세로 띠 + 지붕)
   box(g,'#2e8b57',x+w*0.72,top+S*0.9,w*0.1,h-S*1.2);
   box(g,'#2e8b57',x-S*0.08,top,w+S*0.16,S*0.32,3);
@@ -742,7 +806,7 @@ function apt(x,gy,w,h,dong){
   for(let r=0;r<rows;r++){
     const yy=top+S*0.6+r*fh;
     if(yy>H||yy<-fh) continue;
-    for(let c=0;c<3;c++){ const xx=x+w*0.22+c*w*0.17; box(g,(r+c)%5===0?'#ffe8a3':'#a9d4f2',xx,yy,w*0.12,fh*0.55,2); }
+    for(let c=0;c<3;c++){ const xx=x+w*0.22+c*w*0.17; box(g,((r*7+c*3)%(aptNight>0.5?2:5))===0?'#ffe08a':(aptNight>0.5?'#3d4a7a':'#a9d4f2'),xx,yy,w*0.12,fh*0.55,2); }
     box(g,'#d9d5c8',x+w*0.2,yy+fh*0.62,w*0.5,fh*0.1);
   }
   // 이름
