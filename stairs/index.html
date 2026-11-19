@@ -113,6 +113,10 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
   </div>
   <div id="score">0</div>
   <div id="gaugeWrap"><div id="gauge"></div></div>
+  <div id="taBox" class="hide" style="text-align:center;margin-top:4px">
+    <div id="taTime" style="font-size:clamp(30px,9vw,40px);font-weight:900;text-shadow:0 3px 0 rgba(0,0,0,.25);letter-spacing:-1px;white-space:nowrap">⏱ 40</div>
+    <div id="taNext" style="font-size:14px;font-weight:900;background:rgba(0,0,0,.28);display:inline-block;padding:4px 12px;border-radius:12px;white-space:nowrap">다음 보너스까지 50층</div>
+  </div>
 </div>
 <div id="banner"></div>
 <div id="tip" class="hide"></div>
@@ -138,7 +142,10 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
     </div>
     <div id="pvName">눕</div>
     <div style="display:flex;gap:6px;justify-content:center;margin-top:6px"><button id="btnPhoto" class="hide" style="background:#fff0f5;color:#d81b60;border-radius:12px;padding:7px 12px;font-weight:900;font-size:14px;letter-spacing:-.4px">📷 얼굴 사진 넣기</button><button id="btnPhotoDel" class="hide" style="background:#eef3ff;color:#3a4766;border-radius:12px;padding:7px 12px;font-weight:900;font-size:14px;letter-spacing:-.4px">↺ 얼굴 초기화</button></div>
-    <div class="seg" id="diffSeg">
+    <div class="seg" id="modeSeg" style="margin-top:10px">
+      <button data-m="0">🪜 기본</button><button data-m="1">⏱ 타임어택</button>
+    </div>
+    <div class="seg" id="diffSeg" style="margin-top:6px">
       <button data-d="0">쉬움</button><button data-d="1">보통</button><button data-d="2">어려움</button>
     </div>
     <button class="big b-go" id="btnStart">▶ 게임 시작</button>
@@ -236,7 +243,7 @@ const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 
 /* ================= 저장 ================= */
 const SKEY='infinite_stairs_v1';
-const save={coins:0,owned:['noob','rian','dungi','bacon'],sel:'noob',best:0,records:[],diff:0,sound:true,music:true,games:0};
+const save={mode:0,bestTA:0,coins:0,owned:['noob','rian','dungi','bacon'],sel:'noob',best:0,records:[],diff:0,sound:true,music:true,games:0};
 try{const s=JSON.parse(localStorage.getItem(SKEY)); if(s) Object.assign(save,s);}catch(e){}
 function persist(){try{localStorage.setItem(SKEY,JSON.stringify(save));}catch(e){}}
 
@@ -766,6 +773,10 @@ let score=0, gauge=1, started=false, gotCoins=0, shake=0, now=0, failType='';
 const P={i:0,face:1,from:{x:0,y:0},to:{x:0,y:0},t0:-1,walk:1,fall:null};
 const cam={x:0,y:0};
 let particles=[], pops=[], conts=0, lastRec=null;
+// ⏱ 타임어택 밸런스
+const TA={start:[50,40,32], step:50, bonus:(k,d)=>Math.max(d===0?14:d===1?10:8, [34,30,25][d]-2*(k-1)), penalty:[2,3,4], stun:0.35};
+let taTime=0, taNext=50, taK=0, stunT=0;
+const isTA=()=>save.mode===1;
 const HOP=0.085;
 function wx(i){return xs[i]*S;} function wy(i){return -i*SH;}
 function genUntil(n){
@@ -781,6 +792,7 @@ function resetGame(){
   genUntil(80);
   P.i=0; P.face=xs[1]-xs[0]; P.from={x:0,y:0}; P.to={x:0,y:0}; P.t0=-1; P.fall=null;
   score=0; gauge=1; started=false; gotCoins=0; particles=[]; pops=[]; conts=0; lastRec=null;
+  taTime=TA.start[save.diff]; taNext=TA.step; taK=0; stunT=0;
   cam.x=0; cam.y=0;
 }
 function visualPos(){
@@ -790,6 +802,7 @@ function visualPos(){
 }
 function act(dir){
   if(state!=='play') return;
+  if(stunT>0) return;
   P.face=dir;
   const ni=P.i+1; genUntil(ni+60);
   const tx=xs[P.i]+P.face, cur=visualPos();
@@ -797,12 +810,17 @@ function act(dir){
   if(xs[ni]===tx){
     P.from={x:cur.x,y:cur.y+ (cur.p<1? Math.sin(Math.PI*cur.p)*S*0.22:0)}; P.i=ni; P.to={x:wx(ni),y:wy(ni)}; P.t0=now; P.walk=-P.walk;
     score++; gauge=Math.min(1,gauge+0.1);
+    if(isTA() && score>=taNext){ taK++; const b=TA.bonus(taK,save.diff); taTime+=b; taNext+=TA.step; SFX.mile(); showBanner(`+${b}초!`, `${score}층 보너스`); }
     SFX.step();
     dust(P.to.x,P.to.y);
     trail(CMAP[save.sel].trail,P.to.x,P.to.y);
     if(coinAt[ni]){coinAt[ni]=false; gotCoins++; SFX.coin(); coinBurst(P.to.x,P.to.y-S*0.9); pops.push({x:P.to.x,y:P.to.y-S*1.4,t:0,txt:'+1'});}
     if(score%100===0){ SFX.mile(); const z=ZONES.find(z=>z.at===score); showBanner(`${score}계단 돌파!`, z?z.name:''); }
     updHud();
+  } else if(isTA()){
+    P.face=-P.face; const pen=TA.penalty[save.diff]; taTime-=pen; stunT=TA.stun; shake=6; started=true;
+    tone(180,0.25,'square',0.06,0.6); try{navigator.vibrate&&navigator.vibrate(40);}catch(e){}
+    pops.push({x:cur.x,y:cur.y-S*1.6,t:0,txt:`-${pen}초`}); updHud();
   } else {
     fail('miss', {x:cur.x,y:cur.y});
   }
@@ -1043,7 +1061,10 @@ function frame(){
   if(state==='pause') dt=0;
   now+=dt;
   // 업데이트
-  if(state==='play'&&started){
+  if(stunT>0) stunT-=dt;
+  if(state==='play'&&started&&isTA()){
+    taTime-=dt; if(taTime<=0){ taTime=0; const v=visualPos(); fail('time',{x:v.x,y:v.y}); }
+  } else if(state==='play'&&started){
     const drain=Math.min(1.15,0.22*(1+score/230))*DIFF[save.diff].m;
     gauge-=drain*dt; if(gauge<=0){gauge=0; const v=visualPos(); fail('time',{x:v.x,y:v.y});}
   }
@@ -1070,6 +1091,7 @@ function frame(){
   drawParticles(dt);
   g.restore();
   // HUD
+  if(isTA()&&(state==='play'||state==='falling')){ const tt=$('taTime'); tt.textContent='⏱ '+(taTime<10?taTime.toFixed(1):Math.ceil(taTime)); tt.style.color=taTime<10?'#ffeb3b':'#fff'; $('taNext').textContent=`다음 보너스까지 ${taNext-score}층`; }
   if(state==='play'||state==='falling'){ $('gauge').style.transform=`scaleX(${gauge})`; $('gauge').style.filter=gauge<0.3?`brightness(${1+0.4*Math.sin(now*20)})`:''; }
   if(state==='menu') drawPreview();
   updateGuide();
@@ -1116,22 +1138,24 @@ function startGame(){
   resetGame(); state='play'; show(null);
   $('hud').classList.remove('hide'); $('ctrl').classList.remove('hide');
   hudScore=-1; hudCoin=-1; updHud(); $('gauge').style.transform='scaleX(1)';
-  showBanner('출발!', DIFF[save.diff].name+' 모드');
+  $('gaugeWrap').classList.toggle('hide',isTA()); $('taBox').classList.toggle('hide',!isTA());
+  showBanner('출발!', (isTA()?'타임어택 · ':'')+DIFF[save.diff].name);
 }
 function gameOver(){
   state='over';
   $('hud').classList.add('hide');
-  const isNew=score>save.best && score>0;
-  if(isNew) save.best=score;
+  const bk=isTA()?'bestTA':'best';
+  const isNew=score>(save[bk]||0) && score>0;
+  if(isNew) save[bk]=score;
   save.coins+=gotCoins; save.games++;
-  if(score>0){ const d=new Date(); lastRec={s:score,c:save.sel,d:`${d.getMonth()+1}/${d.getDate()}`,m:save.diff}; save.records.push(lastRec); save.records.sort((a,b)=>b.s-a.s); save.records=save.records.slice(0,10); }
+  if(score>0){ const d=new Date(); lastRec={s:score,c:save.sel,d:`${d.getMonth()+1}/${d.getDate()}`,m:save.diff,ta:isTA()?1:0}; save.records.push(lastRec); save.records.sort((a,b)=>b.s-a.s); save.records=save.records.slice(0,10); }
   // 기록으로 열리는 캐릭터
   const unlocked=[];
-  CHARS.forEach(c=>{ if(c.best && save.best>=c.best && !save.owned.includes(c.id)){ save.owned.push(c.id); unlocked.push(c); } });
+  CHARS.forEach(c=>{ if(c.best && Math.max(save.best,save.bestTA||0)>=c.best && !save.owned.includes(c.id)){ save.owned.push(c.id); unlocked.push(c); } });
   persist();
-  $('overTitle2').textContent=failType==='time'?'⏰ 시간 초과!':'앗! 떨어졌어요';
+  $('overTitle2').textContent=isTA()?'⏱ 시간 끝!':failType==='time'?'⏰ 시간 초과!':'앗! 떨어졌어요';
   $('overScore').innerHTML=score+(isNew?'<span class="newb">NEW</span>':'');
-  $('oBest').textContent=save.best; $('oCoin').textContent=gotCoins; gotCoins=0; updContBtn();
+  $('oBest').textContent=save[bk]; $('oCoin').textContent=gotCoins; gotCoins=0; updContBtn();
   show('over');
   if(unlocked.length){ setTimeout(()=>openModal(unlocked[0],`🎉 새 캐릭터! ${unlocked[0].name}`,[{t:'좋아요!',cls:'b-go',fn:closeModal}]),400); SFX.buy(); }
 }
@@ -1147,17 +1171,18 @@ function continueGame(){
   if(lastRec){ const k=save.records.indexOf(lastRec); if(k>=0) save.records.splice(k,1); lastRec=null; }
   persist(); ac(); SFX.buy();
   P.fall=null; P.t0=-1; P.to={x:wx(P.i),y:wy(P.i)}; P.from={...P.to};
-  coinAt[P.i+1]=coinAt[P.i+1]; gauge=1; started=false; state='play'; guideKey='';
+  coinAt[P.i+1]=coinAt[P.i+1]; gauge=1; started=false; if(isTA()) taTime=Math.max(taTime,10); state='play'; guideKey='';
   show(null); $('hud').classList.remove('hide'); $('ctrl').classList.remove('hide');
   hudScore=-1; hudCoin=-1; updHud(); $('gauge').style.transform='scaleX(1)';
-  showBanner('이어하기!', score+'계단부터 다시 출발');
+  showBanner('이어하기!', score+'계단부터 다시 출발'+(isTA()?' (10초)':''));
 }
 function toMenu(){
   state='menu'; $('hud').classList.add('hide'); $('ctrl').classList.add('hide');
   resetGame(); refreshMenu(); show('menu');
 }
 function refreshMenu(){
-  $('mBest').textContent=save.best; $('mCoin').textContent=save.coins;
+  $('mBest').textContent=isTA()?(save.bestTA||0):save.best; $('mCoin').textContent=save.coins;
+  [...$('modeSeg').children].forEach(b=>b.classList.toggle('on',+b.dataset.m===(save.mode||0)));
   $('pvName').textContent=CMAP[save.sel].name;
   $('btnPhoto').classList.toggle('hide',!CMAP[save.sel].photo);
   const fk=CMAP[save.sel].photoKey||save.sel; $('btnPhoto').classList.toggle('hide',!(CMAP[save.sel].photo||CMAP[save.sel].photoKey)); $('btnPhoto').textContent=faceImgs[fk]?'📷 사진 바꾸기':'📷 얼굴 사진 넣기'; $('btnPhotoDel').classList.toggle('hide',!faceImgs[fk]);
@@ -1227,7 +1252,7 @@ function showRec(){
   const ul=$('recList'); ul.innerHTML='';
   if(!save.records.length) ul.innerHTML='<li style="justify-content:center;color:#7a86a3">아직 기록이 없어요. 도전해 보세요!</li>';
   save.records.forEach((r,i)=>{ const li=document.createElement('li'); const nm=(CMAP[r.c]||CHARS[0]).name;
-    li.innerHTML=`<span class="rk">${['🥇','🥈','🥉'][i]||i+1}</span><span class="sc">${r.s}계단</span><span class="cn">${nm} · ${DIFF[r.m||0].name} · ${r.d}</span>`; ul.appendChild(li); });
+    li.innerHTML=`<span class="rk">${['🥇','🥈','🥉'][i]||i+1}</span><span class="sc">${r.s}계단</span><span class="cn">${nm} · ${r.ta?'⏱':'🪜'} ${DIFF[r.m||0].name} · ${r.d}</span>`; ul.appendChild(li); });
   show('rec');
 }
 
@@ -1263,6 +1288,7 @@ $('btnRec').onclick=()=>{ac();SFX.click();showRec();};
 $('recBack').onclick=()=>{SFX.click();show('menu');};
 $('pvPrev').onclick=()=>{ac();cyclePv(-1);};
 $('pvNext').onclick=()=>{ac();cyclePv(1);};
+$('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b) return; ac(); save.mode=+b.dataset.m; persist(); SFX.click(); refreshMenu();});
 $('diffSeg').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b) return; ac(); save.diff=+b.dataset.d; persist(); SFX.click(); refreshMenu();});
 $('tgSnd').onclick=()=>{save.sound=!save.sound;persist();ac();SFX.click();refreshMenu();};
 $('tgBgm').onclick=()=>{save.music=!save.music;persist();ac();SFX.click();refreshMenu();};
