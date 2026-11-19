@@ -113,9 +113,11 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
   </div>
   <div id="score">0</div>
   <div id="gaugeWrap"><div id="gauge"></div></div>
+  <div id="hearts" class="hide" style="text-align:center;font-size:26px;margin-top:4px;letter-spacing:2px;white-space:nowrap">❤️❤️❤️</div>
+  <div id="hurry" style="position:fixed;left:0;right:0;top:40%;text-align:center;font-size:clamp(34px,11vw,52px);font-weight:900;color:#ffeb3b;text-shadow:0 4px 0 #d84315;opacity:0;pointer-events:none;white-space:nowrap">빨리빨리!</div>
   <div id="taBox" class="hide" style="text-align:center;margin-top:4px">
     <div id="taTime" style="font-size:clamp(30px,9vw,40px);font-weight:900;text-shadow:0 3px 0 rgba(0,0,0,.25);letter-spacing:-1px;white-space:nowrap">⏱ 40</div>
-    <div id="taNext" style="font-size:14px;font-weight:900;background:rgba(0,0,0,.28);display:inline-block;padding:4px 12px;border-radius:12px;white-space:nowrap">다음 보너스까지 50층</div>
+    <div id="taNext" style="font-size:14px;font-weight:900;background:rgba(0,0,0,.28);display:inline-block;padding:4px 12px;border-radius:12px;white-space:nowrap">🎁 시간 선물까지 50층</div>
   </div>
 </div>
 <div id="banner"></div>
@@ -143,7 +145,7 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
     <div id="pvName">눕</div>
     <div style="display:flex;gap:6px;justify-content:center;margin-top:6px"><button id="btnPhoto" class="hide" style="background:#fff0f5;color:#d81b60;border-radius:12px;padding:7px 12px;font-weight:900;font-size:14px;letter-spacing:-.4px">📷 얼굴 사진 넣기</button><button id="btnPhotoDel" class="hide" style="background:#eef3ff;color:#3a4766;border-radius:12px;padding:7px 12px;font-weight:900;font-size:14px;letter-spacing:-.4px">↺ 얼굴 초기화</button></div>
     <div class="seg" id="modeSeg" style="margin-top:10px">
-      <button data-m="0">🪜 기본</button><button data-m="1">⏱ 타임어택</button>
+      <button data-m="0">🪜 기본</button><button data-m="1">⏱ 시간 도전</button>
     </div>
     <div class="seg" id="diffSeg" style="margin-top:6px">
       <button data-d="0">쉬움</button><button data-d="1">보통</button><button data-d="2">어려움</button>
@@ -753,6 +755,10 @@ setInterval(()=>{
   while(bgmNext<AC.currentTime+0.25){ const k=bgmStep%32; note(MEL[k],spb*0.9,'square',0.02,bgmNext); note(BAS[k],spb*0.95,'triangle',0.05,bgmNext); bgmNext+=spb; bgmStep++; }
 },80);
 
+function sayHurry(){
+  try{ if(save.sound && window.speechSynthesis){ const u=new SpeechSynthesisUtterance('빨리빨리!'); u.lang='ko-KR'; u.rate=1.4; u.pitch=1.5; speechSynthesis.cancel(); speechSynthesis.speak(u); return; } }catch(e){}
+  [880,1100,880,1100].forEach((f,i)=>tone(f,0.1,'square',0.06,0,i*0.12));
+}
 /* ================= 게임 상태 ================= */
 const DIFF=[{m:0.55,name:'쉬움'},{m:1,name:'보통'},{m:1.35,name:'어려움'}];
 const ZONES=[
@@ -775,7 +781,9 @@ const cam={x:0,y:0};
 let particles=[], pops=[], conts=0, lastRec=null;
 // ⏱ 타임어택 밸런스
 const TA={start:[50,40,32], step:50, bonus:(k,d)=>Math.max(d===0?14:d===1?10:8, [34,30,25][d]-2*(k-1)), penalty:[2,3,4], stun:0.35};
-let taTime=0, taNext=50, taK=0, stunT=0;
+let taTime=0, taNext=50, taK=0, stunT=0, lives=0, hurried=false, lastTick=99;
+const useHearts=()=>!isTA()&&save.diff===0;
+function drawHearts(){ const h=$('hearts'); h.classList.toggle('hide',!useHearts()||state==='menu'); h.textContent='❤️'.repeat(Math.max(0,lives))+'🤍'.repeat(Math.max(0,3-lives)); }
 const isTA=()=>save.mode===1;
 const HOP=0.085;
 function wx(i){return xs[i]*S;} function wy(i){return -i*SH;}
@@ -792,7 +800,7 @@ function resetGame(){
   genUntil(80);
   P.i=0; P.face=xs[1]-xs[0]; P.from={x:0,y:0}; P.to={x:0,y:0}; P.t0=-1; P.fall=null;
   score=0; gauge=1; started=false; gotCoins=0; particles=[]; pops=[]; conts=0; lastRec=null;
-  taTime=TA.start[save.diff]; taNext=TA.step; taK=0; stunT=0;
+  taTime=TA.start[save.diff]; taNext=TA.step; taK=0; stunT=0; lives=3; hurried=false; lastTick=99;
   cam.x=0; cam.y=0;
 }
 function visualPos(){
@@ -810,7 +818,7 @@ function act(dir){
   if(xs[ni]===tx){
     P.from={x:cur.x,y:cur.y+ (cur.p<1? Math.sin(Math.PI*cur.p)*S*0.22:0)}; P.i=ni; P.to={x:wx(ni),y:wy(ni)}; P.t0=now; P.walk=-P.walk;
     score++; gauge=Math.min(1,gauge+0.1);
-    if(isTA() && score>=taNext){ taK++; const b=TA.bonus(taK,save.diff); taTime+=b; taNext+=TA.step; SFX.mile(); showBanner(`+${b}초!`, `${score}층 보너스`); }
+    if(isTA() && score>=taNext){ taK++; const b=TA.bonus(taK,save.diff); taTime+=b; taNext+=TA.step; SFX.mile(); showBanner(`🎁 +${b}초!`, `${score}층 시간 선물`); }
     SFX.step();
     dust(P.to.x,P.to.y);
     trail(CMAP[save.sel].trail,P.to.x,P.to.y);
@@ -821,7 +829,12 @@ function act(dir){
     P.face=-P.face; const pen=TA.penalty[save.diff]; taTime-=pen; stunT=TA.stun; shake=6; started=true;
     tone(180,0.25,'square',0.06,0.6); try{navigator.vibrate&&navigator.vibrate(40);}catch(e){}
     pops.push({x:cur.x,y:cur.y-S*1.6,t:0,txt:`-${pen}초`}); updHud();
+  } else if(useHearts() && lives>1){
+    lives--; drawHearts(); P.face=-P.face; stunT=TA.stun; shake=6; started=true;
+    tone(220,0.3,'triangle',0.08,0.5); try{navigator.vibrate&&navigator.vibrate(60);}catch(e){}
+    pops.push({x:cur.x,y:cur.y-S*1.6,t:0,txt:'💔'}); showBanner(lives===1?'마지막 하트!':'괜찮아!', lives===1?'조심조심~':'하트가 '+lives+'개 남았어요');
   } else {
+    if(useHearts()){ lives=0; drawHearts(); }
     fail('miss', {x:cur.x,y:cur.y});
   }
 }
@@ -1031,6 +1044,11 @@ function drawBlock(i){
   // 로블록스 스터드
   for(const ox of [-0.25,0.25]){ box(g,shade(base,0.28),x+ox*w-w*0.14,y-h*0.2,w*0.28,h*0.26,3); box(g,shade(base,0.05),x+ox*w-w*0.14,y-h*0.02,w*0.28,h*0.08,2); }
   if(mile){ g.fillStyle='#5d4037'; g.font=`900 ${Math.round(h*0.55)}px sans-serif`; g.textAlign='center'; g.textBaseline='middle'; g.fillText(i,x,y+h*0.62); }
+  if(save.diff===0 && state==='play' && i>P.i && i<=P.i+7 && i>=2 && (xs[i]-xs[i-1])!==(xs[i-1]-xs[i-2])){
+    const d=xs[i]-xs[i-1], a=0.6+0.4*Math.sin(now*8+i);
+    g.globalAlpha=a; star(g,'#fff59d',x+d*w*0.3,y+h*0.55,h*0.32); g.globalAlpha=1;
+    g.fillStyle='#ff6f00'; g.font=`900 ${Math.round(h*0.62)}px sans-serif`; g.textAlign='center'; g.textBaseline='middle'; g.fillText(d>0?'▶':'◀',x-d*w*0.12,y+h*0.6);
+  }
   if(coinAt[i]){ const cyy=y-S*0.55+Math.sin(now*5+i)*S*0.08, sq=Math.abs(Math.cos(now*3+i)); ell(g,'#f9a825',x,cyy,S*0.2*sq+1,S*0.2); ell(g,'#ffd54f',x,cyy,S*0.15*sq+0.5,S*0.15); }
 }
 function drawParticles(dt){
@@ -1063,7 +1081,12 @@ function frame(){
   // 업데이트
   if(stunT>0) stunT-=dt;
   if(state==='play'&&started&&isTA()){
-    taTime-=dt; if(taTime<=0){ taTime=0; const v=visualPos(); fail('time',{x:v.x,y:v.y}); }
+    taTime-=dt;
+    if(taTime<5 && !hurried){ hurried=true; sayHurry(); }
+    if(taTime>6) hurried=false;
+    if(taTime<5){ const sec=Math.ceil(taTime); if(sec!==lastTick){ lastTick=sec; tone(1200,0.07,'square',0.05); } $('hurry').style.opacity=0.55+0.45*Math.sin(now*12); $('hurry').style.transform=`scale(${1+0.08*Math.sin(now*12)})`; }
+    else { $('hurry').style.opacity=0; lastTick=99; }
+    if(taTime<=0){ taTime=0; const v=visualPos(); fail('time',{x:v.x,y:v.y}); }
   } else if(state==='play'&&started){
     const drain=Math.min(1.15,0.22*(1+score/230))*DIFF[save.diff].m;
     gauge-=drain*dt; if(gauge<=0){gauge=0; const v=visualPos(); fail('time',{x:v.x,y:v.y});}
@@ -1091,7 +1114,7 @@ function frame(){
   drawParticles(dt);
   g.restore();
   // HUD
-  if(isTA()&&(state==='play'||state==='falling')){ const tt=$('taTime'); tt.textContent='⏱ '+(taTime<10?taTime.toFixed(1):Math.ceil(taTime)); tt.style.color=taTime<10?'#ffeb3b':'#fff'; $('taNext').textContent=`다음 보너스까지 ${taNext-score}층`; }
+  if(isTA()&&(state==='play'||state==='falling')){ const tt=$('taTime'); tt.textContent='⏱ '+(taTime<10?taTime.toFixed(1):Math.ceil(taTime)); tt.style.color=taTime<10?'#ffeb3b':'#fff'; $('taNext').textContent=`🎁 시간 선물까지 ${taNext-score}층`; }
   if(state==='play'||state==='falling'){ $('gauge').style.transform=`scaleX(${gauge})`; $('gauge').style.filter=gauge<0.3?`brightness(${1+0.4*Math.sin(now*20)})`:''; }
   if(state==='menu') drawPreview();
   updateGuide();
@@ -1138,12 +1161,12 @@ function startGame(){
   resetGame(); state='play'; show(null);
   $('hud').classList.remove('hide'); $('ctrl').classList.remove('hide');
   hudScore=-1; hudCoin=-1; updHud(); $('gauge').style.transform='scaleX(1)';
-  $('gaugeWrap').classList.toggle('hide',isTA()); $('taBox').classList.toggle('hide',!isTA());
-  showBanner('출발!', (isTA()?'타임어택 · ':'')+DIFF[save.diff].name);
+  $('gaugeWrap').classList.toggle('hide',isTA()); $('taBox').classList.toggle('hide',!isTA()); drawHearts();
+  showBanner('출발!', (isTA()?'시간 도전 · ':'')+DIFF[save.diff].name);
 }
 function gameOver(){
   state='over';
-  $('hud').classList.add('hide');
+  $('hud').classList.add('hide'); $('hurry').style.opacity=0;
   const bk=isTA()?'bestTA':'best';
   const isNew=score>(save[bk]||0) && score>0;
   if(isNew) save[bk]=score;
@@ -1171,7 +1194,7 @@ function continueGame(){
   if(lastRec){ const k=save.records.indexOf(lastRec); if(k>=0) save.records.splice(k,1); lastRec=null; }
   persist(); ac(); SFX.buy();
   P.fall=null; P.t0=-1; P.to={x:wx(P.i),y:wy(P.i)}; P.from={...P.to};
-  coinAt[P.i+1]=coinAt[P.i+1]; gauge=1; started=false; if(isTA()) taTime=Math.max(taTime,10); state='play'; guideKey='';
+  coinAt[P.i+1]=coinAt[P.i+1]; gauge=1; started=false; lives=3; hurried=false; drawHearts(); if(isTA()) taTime=Math.max(taTime,10); state='play'; guideKey='';
   show(null); $('hud').classList.remove('hide'); $('ctrl').classList.remove('hide');
   hudScore=-1; hudCoin=-1; updHud(); $('gauge').style.transform='scaleX(1)';
   showBanner('이어하기!', score+'계단부터 다시 출발'+(isTA()?' (10초)':''));
