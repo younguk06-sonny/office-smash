@@ -845,9 +845,10 @@ function gameOver(){
   show('over');
   if(unlocked.length){ setTimeout(()=>openModal(unlocked[0],`🎉 새 캐릭터! ${unlocked[0].name}`,[{t:'좋아요!',cls:'b-go',fn:closeModal}]),400); SFX.buy(); }
 }
-function contCost(){ return conts===0?0:conts*20; }
+const FREE_CONT=5;
+function contCost(){ return conts<FREE_CONT?0:(conts-FREE_CONT+1)*20; }
 function updContBtn(){ const c=contCost(), b=$('btnCont');
-  b.innerHTML=c===0?'▶ 이어하기 <small style="font-size:.7em">무료</small>':`▶ 이어하기 <span class="coin" style="vertical-align:-2px;width:16px;height:16px"></span>${c}`;
+  b.innerHTML=c===0?`▶ 이어하기 <small style="font-size:.62em;letter-spacing:-.5px">무료 ${FREE_CONT-conts}번</small>`:`▶ 이어하기 <span class="coin" style="vertical-align:-2px;width:16px;height:16px"></span>${c}`;
   b.style.opacity=(c>save.coins)?0.5:1; }
 function continueGame(){
   const c=contCost();
