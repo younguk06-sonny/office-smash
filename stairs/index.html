@@ -345,6 +345,8 @@ const CHARS=[
  {id:'friend_sea',name:'삐진 세아',skin:'#ffe3c8',shirt:'#80cbc4',pants:'#5d4037',hat:'pigtail',hat2:'bow',hairC:'#4e342e',hatC:'#ff80ab',face:'sulk',dress:'#4db6ac',trail:'say',says:['흥!','몰라!','안 놀아!','칫!','말 걸지 마!'],price:0},
  {id:'friend_yeseo',name:'울보 예서',skin:'#ffe3c8',shirt:'#90caf9',pants:'#90caf9',hat:'longhair',hat2:'flower',hairC:'#3e2723',hatC:'#ffeb3b',face:'cry',dress:'#64b5f6',trail:'tears',sfx:'cry',price:0},
  {id:'friend_jjangdo',name:'달리기 빠른 짱도',skin:'#f1c39b',shirt:'#f44336',pants:'#212121',shoes:'#00e676',shorts:true,hat:'bacon',hat2:'headband',hairC:'#141414',hatC:'#ffffff',face:'happy',det:'number',trail:'dash',sfx:'dash',price:0},
+ {id:'friend_bear',name:'곰승현',skin:'#ffe0c2',shirt:'#8d5524',pants:'#6d3f19',shoes:'#4e2a0e',hat:'hood',hat2:'bearears',hatC:'#8d5524',face:'happy',det:'belly',detC:'#d7a86e',ex:['honey'],trail:'say',says:['곰곰!','어흥~','꿀 주세요!','곰 세 마리~'],sfx:'growl',price:0},
+ {id:'friend_geunde',name:'근데요승현',skin:'#ffe0c2',shirt:'#4caf50',pants:'#37474f',shoes:'#1e88e5',hat:'hair',hairC:'#141414',face:'nag',det:'star',detC:'#c8e6c9',bubble:'근데요',trail:'say',says:['근데요..','근데요~ 있잖아요','근데요 왜요?','근데요 근데요!'],price:0},
  {id:'dungi',photo:true,name:'둥이',dog:true,fur:'#d9a273',trail:'heart',price:0},
  {id:'bacon',name:'베이컨',skin:'#ffd2a8',shirt:'#263238',pants:'#1565c0',hat:'bacon',hairC:'#7a4320',face:'smile',price:0},
  {id:'cat',name:'고양이',skin:'#ffe3c8',shirt:'#ffb74d',pants:'#6d4c41',hat:'hair',hat2:'catears',hairC:'#ff9800',hatC:'#ff9800',face:'cat',ex:['tail'],tailT:'cat',exC:'#ff9800',price:30},
@@ -407,7 +409,7 @@ const CHARS=[
  {id:'diamond',name:'다이아 눕',skin:'#80deea',shirt:'#26c6da',pants:'#00838f',face:'cool',det:'shine',hat:'crown',trail:'diamond',price:0,best:1000},
 ];
 const CMAP={}; CHARS.forEach(c=>CMAP[c.id]=c);
-['dungi','mom','dad','tongtong_king','friend_sea','friend_yeseo','friend_jjangdo',...CHARS.filter(c=>c.photoKey).map(c=>c.id)].forEach(id=>{ if(!save.owned.includes(id)) save.owned.push(id); });
+['dungi','mom','dad','tongtong_king','friend_bear','friend_geunde','friend_sea','friend_yeseo','friend_jjangdo',...CHARS.filter(c=>c.photoKey).map(c=>c.id)].forEach(id=>{ if(!save.owned.includes(id)) save.owned.push(id); });
 if(!CMAP[save.sel]) save.sel='noob';
 
 /* ================= 그리기 도구 ================= */
@@ -476,6 +478,7 @@ function drawChar(G,c,x,y,s,face,walk,t){
   G.save(); if(!c.hat||!['helmet','knight','pumpkin'].includes(c.hat)) G.translate(0.28*u,0); drawFace(G,c,u,t); G.restore();
   if(c.beard){G.fillStyle=c.beard;G.beginPath();G.moveTo(-1.65*u,-8.1*u);G.lineTo(1.75*u,-8.1*u);G.quadraticCurveTo(1.9*u,-6.0*u,0.2*u,-5.6*u);G.quadraticCurveTo(-1.6*u,-6.0*u,-1.65*u,-8.1*u);G.fill(); box(G,shade(c.skin,-0.5),0.0*u,-7.95*u,0.9*u,0.22*u,0.1*u);}
   drawHat(G,c,u,t,'front');
+  if(c.bubble) talkBubble(G,c.bubble+'.'.repeat(1+Math.floor(t*2.5)%3),u,t);
   G.restore();
 }
 
@@ -568,6 +571,13 @@ function drawDog(G,c,u,t,walk){
 }
 const HAIRS=['hair','longhair','rianhair','momhair','bacon','rainbowlong','hood','rianpony','rianbun','swimcap'];
 function drawAcc(G,c,u,t){ const c2=Object.assign({},c); if(HAIRS.includes(c2.hat)) c2.hat=null; if(HAIRS.includes(c2.hat2)) c2.hat2=null; G.save(); G.translate(0,-0.45*u); drawHat(G,c2,u,t,'front'); G.restore(); }
+function talkBubble(G,txt,u,t){
+  G.save(); G.translate(0.3*u,-13.2*u+Math.sin(t*3)*0.2*u); if(curFace<0) G.scale(-1,1);
+  G.font=`900 ${1.45*u}px sans-serif`; const w=Math.max(G.measureText("근데요...").width,G.measureText(txt).width)+1.4*u, h=2.3*u;
+  box(G,'rgba(0,0,0,.15)',-w/2+0.15*u,-h/2+0.2*u,w,h,h/2); box(G,'#fff',-w/2,-h/2,w,h,h/2);
+  poly(G,'#fff',[-0.5*u,h/2-0.1*u,0.3*u,h/2-0.1*u,-0.4*u,h/2+0.7*u]);
+  G.fillStyle='#37474f'; G.textAlign='left'; G.textBaseline='middle'; G.fillText(txt,-w/2+0.6*u,0.05*u); G.restore();
+}
 function arm(G,c,ax,ay,ang,u,back){
   G.save(); G.translate(ax,ay); G.rotate(ang);
   const sh=back?shade(c.shirt,-0.25):c.shirt, sk=back?shade(c.skin,-0.2):c.skin;
@@ -668,6 +678,7 @@ function drawFront(G,c,u,t){
   if(!c.ex) return;
   for(const e of c.ex){
     if(e==='scarf'){const col=c.exC||'#e53935'; box(G,col,-2.35*u,-7.4*u,4.7*u,0.85*u,0.4*u); const f=Math.sin(t*7)*0.3*u; poly(G,shade(col,-0.15),[-1.6*u,-6.8*u,-0.8*u,-6.8*u,-1.6*u-f,-4.8*u,-2.4*u-f,-5.0*u]);}
+    if(e==='honey'){ box(G,'#ffb300',1.6*u,-5.4*u,2.2*u,2.1*u,0.6*u); box(G,'#8d6e63',1.5*u,-5.7*u,2.4*u,0.5*u,0.2*u); G.fillStyle='#5d4037'; G.font=`900 ${0.6*u}px sans-serif`; G.textAlign='center'; G.save(); G.translate(2.7*u,-4.3*u); if(curFace<0) G.scale(-1,1); G.fillText('꿀',0,0); G.restore(); }
     if(e==='megaphone'){ G.save(); G.translate(2.6*u,-6.2*u); G.rotate(-0.35); box(G,'#e53935',-0.3*u,-0.35*u,0.8*u,0.7*u,0.15*u); poly(G,'#fafafa',[0.5*u,-0.35*u,2.0*u,-0.9*u,2.0*u,0.9*u,0.5*u,0.35*u]); poly(G,'#e53935',[1.8*u,-0.85*u,2.0*u,-0.9*u,2.0*u,0.9*u,1.8*u,0.85*u]); G.restore(); }
     if(e==='briefcase'){ box(G,'#5d4037',2.4*u,-3.4*u,2.6*u,1.9*u,0.25*u); box(G,'#3e2723',3.2*u,-3.8*u,1.0*u,0.5*u,0.2*u); box(G,'#ffd54f',3.55*u,-2.8*u,0.3*u,0.3*u,0.05*u); }
     if(e==='controller'){ box(G,'#424242',-0.2*u,-4.9*u,3.4*u,1.4*u,0.6*u); circ(G,'#ff5252',2.4*u,-4.4*u,0.22*u); circ(G,'#40c4ff',2.8*u,-4.0*u,0.22*u); box(G,'#bdbdbd',0.3*u,-4.35*u,0.8*u,0.25*u); box(G,'#bdbdbd',0.575*u,-4.6*u,0.25*u,0.8*u); }
