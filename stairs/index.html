@@ -347,6 +347,7 @@ const CHARS=[
  {id:'friend_jjangdo',name:'달리기 빠른 짱도',skin:'#f1c39b',shirt:'#f44336',pants:'#212121',shoes:'#00e676',shorts:true,hat:'bacon',hat2:'headband',hairC:'#141414',hatC:'#ffffff',face:'happy',det:'number',trail:'dash',sfx:'dash',price:0},
  {id:'friend_bear',name:'곰승현',skin:'#ffe0c2',shirt:'#8d5524',pants:'#6d3f19',shoes:'#4e2a0e',hat:'hood',hat2:'bearears',hatC:'#8d5524',face:'happy',det:'belly',detC:'#d7a86e',ex:['honey'],trail:'say',says:['곰곰!','어흥~','꿀 주세요!','곰 세 마리~'],sfx:'growl',price:0},
  {id:'friend_geunde',name:'근데요승현',skin:'#ffe0c2',shirt:'#4caf50',pants:'#37474f',shoes:'#1e88e5',hat:'hair',hairC:'#141414',face:'nag',det:'star',detC:'#c8e6c9',bubble:'근데요',trail:'say',says:['근데요..','근데요~ 있잖아요','근데요 왜요?','근데요 근데요!'],price:0},
+ {id:'friend_icecream',name:'류아이스크림',skin:'#ffe3c8',shirt:'#e0a35c',pants:'#c98a45',shoes:'#8d5a2b',hat:'softserve',face:'happy',det:'waffle',trail:'sprinkle',sfx:'boing',price:0},
  {id:'dungi',photo:true,name:'둥이',dog:true,fur:'#d9a273',trail:'heart',price:0},
  {id:'bacon',name:'베이컨',skin:'#ffd2a8',shirt:'#263238',pants:'#1565c0',hat:'bacon',hairC:'#7a4320',face:'smile',price:0},
  {id:'cat',name:'고양이',skin:'#ffe3c8',shirt:'#ffb74d',pants:'#6d4c41',hat:'hair',hat2:'catears',hairC:'#ff9800',hatC:'#ff9800',face:'cat',ex:['tail'],tailT:'cat',exC:'#ff9800',price:30},
@@ -409,7 +410,7 @@ const CHARS=[
  {id:'diamond',name:'다이아 눕',skin:'#80deea',shirt:'#26c6da',pants:'#00838f',face:'cool',det:'shine',hat:'crown',trail:'diamond',price:0,best:1000},
 ];
 const CMAP={}; CHARS.forEach(c=>CMAP[c.id]=c);
-['dungi','mom','dad','tongtong_king','friend_bear','friend_geunde','friend_sea','friend_yeseo','friend_jjangdo',...CHARS.filter(c=>c.photoKey).map(c=>c.id)].forEach(id=>{ if(!save.owned.includes(id)) save.owned.push(id); });
+['dungi','mom','dad','tongtong_king','friend_icecream','friend_bear','friend_geunde','friend_sea','friend_yeseo','friend_jjangdo',...CHARS.filter(c=>c.photoKey).map(c=>c.id)].forEach(id=>{ if(!save.owned.includes(id)) save.owned.push(id); });
 if(!CMAP[save.sel]) save.sel='noob';
 
 /* ================= 그리기 도구 ================= */
@@ -592,6 +593,9 @@ function shirtDetail(G,c,u,t){
   const d=c.det, dc=c.detC||'#fff';
   G.save(); rr(G,-2.25*u,-7.2*u,4.5*u,3.8*u,0.4*u); G.clip();
   switch(d){
+    case 'waffle':
+      G.strokeStyle=shade(c.shirt,-0.25); G.lineWidth=u*0.14; for(let k=-4;k<6;k++){ G.beginPath(); G.moveTo((k*0.9-2.4)*u,-7.3*u); G.lineTo((k*0.9+1.5)*u,-3.3*u); G.stroke(); G.beginPath(); G.moveTo((k*0.9+2.4)*u,-7.3*u); G.lineTo((k*0.9-1.5)*u,-3.3*u); G.stroke(); }
+      box(G,'#fff8ec',-2.3*u,-7.3*u,4.6*u,0.6*u,0.3*u); for(let k=0;k<4;k++) circ(G,'#fff8ec',(-1.7+k*1.15)*u,-6.7*u,0.32*u); break;
     case 'suit':
       poly(G,'#ffffff',[-0.6*u,-7.2*u,1.6*u,-7.2*u,0.5*u,-4.4*u]); poly(G,dc,[0.3*u,-7.0*u,0.7*u,-7.0*u,0.85*u,-5.0*u,0.5*u,-4.6*u,0.15*u,-5.0*u]);
       poly(G,shade(c.shirt,0.15),[-0.6*u,-7.2*u,0.0*u,-7.2*u,0.3*u,-5.6*u]); poly(G,shade(c.shirt,0.15),[1.0*u,-7.2*u,1.6*u,-7.2*u,0.7*u,-5.6*u]);
@@ -811,6 +815,23 @@ function drawHat(G,c,u,t,layer){
       case 'glasses': if(F){ G.strokeStyle='#212121'; G.lineWidth=u*0.16; G.beginPath(); G.arc(-0.25*u+0.28*u,-8.9*u,0.48*u,0,7); G.moveTo(0.95*u+0.28*u+0.48*u,-8.9*u); G.arc(0.95*u+0.28*u,-8.9*u,0.48*u,0,7); G.moveTo(0.5*u,-8.9*u); G.lineTo(0.75*u,-8.9*u); G.moveTo(-0.45*u,-8.95*u); G.lineTo(L,-9.1*u); G.stroke(); } break;
       case 'sunhat': if(F){ ell(G,shade(hc,-0.1),0.1*u,T+0.25*u,3.2*u,0.6*u,0); G.fillStyle=hc; G.beginPath(); G.ellipse(0.1*u,T+0.1*u,1.7*u,1.3*u,0,Math.PI,0); G.fill(); box(G,'#ff7043',L-0.05*u,T-0.25*u,3.4*u,0.35*u,0.1*u); } break;
       case 'steam': if(F){ for(let k=0;k<3;k++){ const ph=(t*1.5+k/3)%1; G.globalAlpha=1-ph; circ(G,'#eceff1',(-1.2+k*1.2)*u+Math.sin(t*5+k)*0.2*u,T-(0.5+ph*1.8)*u,(0.35+ph*0.35)*u); } G.globalAlpha=1; } break;
+      case 'softserve':
+        if(F){ const cr='#fff8ec', pk='#ffb3c7', sp=['#ff5252','#40c4ff','#ffeb3b','#69f0ae','#e040fb'];
+          box(G,cr,L-0.45*u,T-0.15*u,4.2*u,1.15*u,0.6*u); box(G,cr,L-0.45*u,T,1.1*u,2.6*u,0.5*u);
+          // 녹아 흐르는 분홍 시럽
+          G.fillStyle=pk; G.beginPath(); G.moveTo(L-0.45*u,T+0.4*u); G.lineTo(R+0.6*u,T+0.4*u); G.lineTo(R+0.6*u,T+0.7*u);
+          for(let k=0;k<5;k++){ const x0=R+0.6*u-k*0.84*u; G.quadraticCurveTo(x0-0.2*u,T+(k%2?1.5:1.0)*u,x0-0.42*u,T+0.7*u); } G.closePath(); G.fill();
+          // 소용돌이 3단
+          ell(G,cr,0.1*u,T-0.5*u,2.0*u,0.75*u,0); ell(G,shade(cr,-0.05),0.1*u,T-0.3*u,2.0*u,0.35*u,0);
+          ell(G,cr,0.0*u,T-1.35*u,1.55*u,0.65*u,-0.05); ell(G,shade(cr,-0.05),0.0*u,T-1.15*u,1.55*u,0.3*u,-0.05);
+          ell(G,cr,0.1*u,T-2.1*u,1.05*u,0.55*u,0.05);
+          G.fillStyle=cr; G.beginPath(); G.moveTo(-0.5*u,T-2.3*u); G.quadraticCurveTo(0.1*u,T-3.6*u,0.9*u,T-3.3*u); G.quadraticCurveTo(0.5*u,T-2.9*u,0.7*u,T-2.3*u); G.closePath(); G.fill();
+          G.strokeStyle=shade(cr,-0.12); G.lineWidth=u*0.08; G.beginPath(); G.arc(0.1*u,T-0.5*u,1.6*u,0.2*Math.PI,0.8*Math.PI); G.arc(0.0*u,T-1.35*u,1.2*u,0.2*Math.PI,0.8*Math.PI); G.stroke();
+          // 스프링클
+          const pts=[[-1.2,-0.6,0.5],[0.9,-0.8,-0.6],[-0.4,-1.5,1.0],[0.7,-1.6,0.2],[-0.1,-2.2,-0.8],[1.5,-0.3,0.9],[-1.6,-0.2,-0.3]];
+          pts.forEach(([x,y,a],k)=>{ G.save(); G.translate(x*u,T+y*u); G.rotate(a); box(G,sp[k%5],-0.22*u,-0.07*u,0.44*u,0.14*u,0.07*u); G.restore(); });
+          circ(G,'#e53935',0.75*u,T-3.25*u,0.32*u); circ(G,'#fff',0.65*u,T-3.35*u,0.09*u); }
+        break;
       case 'pigtail':
         if(B){ for(const sx2 of [L-0.55*u,R+0.45*u]){ circ(G,hair,sx2,T+1.6*u,0.85*u); circ(G,shade(hair,0.1),sx2,T+2.6*u,0.6*u);} }
         if(F){ box(G,hair,L-0.12*u,T-0.35*u,3.55*u,1.15*u,0.55*u); box(G,hair,L-0.12*u,T,1.0*u,2.0*u,0.35*u); box(G,'#ff80ab',L-0.75*u,T+0.9*u,0.5*u,0.4*u,0.15*u); box(G,'#ff80ab',R+0.2*u,T+0.9*u,0.5*u,0.4*u,0.15*u); } break;
@@ -1061,6 +1082,7 @@ function trail(tp,x,y){
       case 'spark': p.col=k%2?'#18ffff':'#76ff03'; p.type='diamond'; break;
       case 'note': p.type='note'; p.col=['#ec407a','#7e57c2','#29b6f6'][k%3]; p.vy=rand(-90,-50); p.life=p.max=1.0; break;
       case 'abc': p.type='txt'; p.txt=['A','B','C','가','나','1','2','★'][Math.floor(Math.random()*8)]; p.col=['#1e88e5','#e53935','#43a047'][k%3]; p.vy=rand(-80,-40); p.life=p.max=0.9; break;
+      case 'sprinkle': p.type='paper'; p.col=['#ff5252','#40c4ff','#ffeb3b','#69f0ae','#e040fb'][Math.floor(Math.random()*5)]; p.r=S*0.05; p.vy=rand(-110,-60); p.life=p.max=0.9; if(k===0&&score%6===0) pops.push({x,y:y-S*1.6,t:0,txt:'🍦 냠냠!'}); break;
       case 'say': { const sz=(CMAP[save.sel].says||['!']); if(k>0||score%3){p.life=0;break;} p.type='say'; p.txt=sz[Math.floor(Math.random()*sz.length)]; p.vy=-25; p.vx=0; p.life=p.max=1.3; p.y=y-S*1.9; break; }
       case 'tears': p.type='drop'; p.col='#4fc3f7'; p.vx=rand(-60,60); p.vy=rand(-120,-60); p.life=p.max=0.8; p.y=y-S*0.95; p.x=x+rand(-S*0.15,S*0.25); if(k===0&&score%4===0) pops.push({x,y:y-S*1.7,t:0,txt:'😭 으앙~'}); break;
       case 'dash': p.type='line'; p.col='rgba(255,255,255,.9)'; p.vx=-P.face*S*4; p.vy=0; p.life=p.max=0.3; if(k===0&&score%5===0) pops.push({x,y:y-S*1.6,t:0,txt:'슝~!'}); break;
