@@ -234,7 +234,7 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
   <div class="panel">
     <div style="font-size:26px;font-weight:900;letter-spacing:-1px;white-space:nowrap">🎉 모두 구했어요!</div>
     <canvas id="endCv" width="400" height="200" style="width:200px;height:100px;display:block;margin:6px auto 0"></canvas>
-    <div style="font-weight:800;color:#6b7896;font-size:14px;white-space:nowrap;letter-spacing:-.4px">둥이와 통통이가 20개 스테이지를 다 깼어요</div>
+    <div style="font-weight:800;color:#6b7896;font-size:14px;white-space:nowrap;letter-spacing:-.4px">친구들이 20개 스테이지를 다 깼어요</div>
     <div id="endScore" style="font-size:46px;font-weight:900;color:#1e88e5;letter-spacing:-2px;line-height:1.1">0</div>
     <div id="endSub" style="font-weight:800;color:#6b7896;font-size:13px;white-space:nowrap">보통</div>
     <button class="big b-pink" id="endMore">▶ 다음 바퀴 도전 (더 빨라요)</button>
@@ -331,6 +331,7 @@ function photoHead(G,id,cx,cy,w,r){
 const CHARS=[
   {id:'dungi',name:'둥이',desc:'🐾 발이 빨라요! · 민트 방울',fur:'#d9a273',spd:7.6,jump:22.4,float:false,bub:'#5fe0b5',dog:true,face:'dungi',treat:'bone'},
   {id:'tongtong',name:'통통이',desc:'🐰 점프가 높고 둥실 떠요! · 분홍 방울',fur:'#cbbfaa',spd:6.6,jump:23.6,float:true,bub:'#ff8fc8',plush:true,face:'tongtong_king',treat:'carrot'},
+  {id:'bora',name:'보라돌이',desc:'💜 방울이 크고 멀리 가요! · 보라 방울',fur:'#a678e8',spd:7.0,jump:23.0,float:false,bub:'#b57cff',bora:true,face:'bora',treat:'grape',bigBub:1.2},
 ];
 function drawPlush(G,c,u,t,walk){
   const f=c.fur, dk=shade(f,-0.15), dirt='#a3a68f';
@@ -375,10 +376,43 @@ function drawDog(G,c,u,t,walk){
   else { circ(G,'#1b1210',hx+0.4*u,hy-0.3*u,0.3*u); circ(G,'#1b1210',hx+1.15*u,hy-0.35*u,0.27*u); circ(G,'#fff',hx+0.48*u,hy-0.4*u,0.1*u); circ(G,'#fff',hx+1.22*u,hy-0.45*u,0.09*u); }
   G.globalAlpha=0.3; circ(G,'#ff6b9a',hx+0.5*u,hy+0.45*u,0.3*u); G.globalAlpha=1;
 }
+/* 보라돌이 — 리안이 그림: 큰 귀 토끼, 동그란 얼굴, 양팔 벌린 별 모양 몸, 배에 동그라미 */
+function drawBora(G,c,u,t,walk){
+  const m=c.fur, lt='#c9a8f5', dk='#5b3a9e', inner='#f0d2ff', belly='#ece0ff';
+  const ol=u*0.2;
+  const sh=(x,y,rx,ry,rot,col)=>{ const gr=G.createRadialGradient(x-rx*0.35,y-ry*0.4,Math.min(rx,ry)*0.1,x,y,Math.max(rx,ry)); gr.addColorStop(0,shade(col,0.25)); gr.addColorStop(1,col);
+    G.fillStyle=gr; G.beginPath(); G.ellipse(x,y,rx,ry,rot||0,0,Math.PI*2); G.fill(); G.lineWidth=ol; G.strokeStyle=dk; G.stroke(); };
+  const line=(pts,w)=>{ G.strokeStyle=dk; G.lineWidth=w||ol; G.lineCap='round'; G.beginPath(); G.moveTo(pts[0],pts[1]); for(let i=2;i<pts.length;i+=2) G.lineTo(pts[i],pts[i+1]); G.stroke(); };
+  const bob=Math.abs(walk)*u*0.35, sw=walk*0.32, wave=Math.sin(t*3)*0.06;
+  G.translate(0,-bob);
+  // 다리 (벌어진 두 다리 + 발바닥 줄)
+  for(const sd of [-1,1]){ G.save(); G.translate(sd*0.95*u,-3.1*u); G.rotate(-sd*0.42+(sd>0?-sw:sw));
+    sh(0,1.45*u,0.95*u,1.75*u,0,m); G.strokeStyle=dk; G.lineWidth=ol*0.8; G.beginPath(); G.ellipse(0,2.25*u,0.78*u,0.45*u,0,Math.PI*1.05,Math.PI*1.95); G.stroke(); G.restore(); }
+  // 팔 (양옆으로 쭉 + 손목 줄)
+  for(const sd of [-1,1]){ G.save(); G.translate(sd*1.6*u,-4.95*u); G.rotate(sd*(-0.08)+(sd>0?wave+sw*0.5:-wave-sw*0.5));
+    sh(sd*1.45*u,0,1.75*u,0.95*u,0,m); G.strokeStyle=dk; G.lineWidth=ol*0.8; G.beginPath(); G.moveTo(sd*2.35*u,-0.65*u); G.quadraticCurveTo(sd*2.55*u,0,sd*2.35*u,0.65*u); G.stroke(); G.restore(); }
+  // 몸통 + 배 동그라미
+  sh(0,-4.25*u,2.0*u,1.85*u,0,m);
+  G.fillStyle=belly; G.beginPath(); G.arc(0.1*u,-4.05*u,0.85*u,0,Math.PI*2); G.fill(); G.lineWidth=ol*0.9; G.strokeStyle=dk; G.stroke();
+  heart(G,'#ff8fc8',0.1*u,-4.05*u,0.32*u);
+  // 귀 (크고 둥근 귀 + 안쪽 줄)
+  for(const sd of [-1,1]){ G.save(); G.translate(sd*1.35*u,-10.0*u); G.rotate(sd*0.12+Math.sin(t*2.4+sd)*0.05);
+    sh(0,0,1.0*u,2.35*u,0,m); G.fillStyle=inner; G.beginPath(); G.ellipse(0,0.25*u,0.5*u,1.55*u,0,0,Math.PI*2); G.fill();
+    G.strokeStyle=shade(dk,0.25); G.lineWidth=ol*0.7; G.beginPath(); G.ellipse(0,0.25*u,0.5*u,1.55*u,0,Math.PI*1.05,Math.PI*1.95); G.stroke(); G.restore(); }
+  // 머리 (넓고 동그란 얼굴)
+  sh(0,-7.25*u,2.75*u,2.2*u,0,m);
+  ell(G,'rgba(255,255,255,.22)',-1.0*u,-8.3*u,0.9*u,0.45*u,-0.3);
+  // 얼굴 (멀리 떨어진 점 눈, ㅅ 입)
+  const fx=0.25*u, fy=-7.3*u, bl=((t*0.9)%4)<0.09;
+  if(bl){ line([fx-1.55*u,fy-0.2*u,fx-1.05*u,fy-0.2*u],ol*0.9); line([fx+1.05*u,fy-0.2*u,fx+1.55*u,fy-0.2*u],ol*0.9); }
+  else { for(const ex of [-1.3,1.3]){ circ(G,'#2a1a4a',fx+ex*u,fy-0.2*u,0.27*u); circ(G,'#fff',fx+ex*u+0.09*u,fy-0.3*u,0.09*u); } }
+  line([fx,fy+0.35*u,fx,fy+0.7*u],ol*0.85); line([fx-0.35*u,fy+0.95*u,fx,fy+0.7*u,fx+0.35*u,fy+0.95*u],ol*0.85);
+  G.globalAlpha=0.45; circ(G,'#ff8fc8',fx-1.75*u,fy+0.55*u,0.4*u); circ(G,'#ff8fc8',fx+1.75*u,fy+0.55*u,0.4*u); G.globalAlpha=1;
+}
 /* 캐릭터: (x,y)=발 가운데, h=키(타일) */
 function drawChar(G,c,x,y,h,face,t,walk){
   G.save(); G.translate(x,y); G.scale(face,1); curFace=face;
-  if(c.dog) drawDog(G,c,h/9.3,t,walk); else drawPlush(G,c,h/11.4,t,walk);
+  if(c.dog) drawDog(G,c,h/9.3,t,walk); else if(c.bora) drawBora(G,c,h/11.4,t,walk); else drawPlush(G,c,h/11.4,t,walk);
   G.restore();
 }
 
@@ -532,6 +566,9 @@ function drawItem(G,k,x,y,s,t){
     case 'candy':
       poly(G,'#ff5fa2',[-s*0.48,-s*0.18,-s*0.25,0,-s*0.48,s*0.18]); poly(G,'#ff5fa2',[s*0.48,-s*0.18,s*0.25,0,s*0.48,s*0.18]);
       circ(G,'#ffd23f',0,0,s*0.27); G.save(); G.beginPath(); G.arc(0,0,s*0.27,0,Math.PI*2); G.clip(); G.strokeStyle='#ff5fa2'; G.lineWidth=s*0.08; for(let k=-2;k<=2;k++){ G.beginPath(); G.moveTo(k*s*0.14-s*0.3,-s*0.3); G.lineTo(k*s*0.14+s*0.3,s*0.3); G.stroke(); } G.restore(); break;
+    case 'grape':
+      for(const [a,b] of [[-0.18,-0.12],[0.0,-0.14],[0.18,-0.12],[-0.09,0.06],[0.09,0.06],[0,0.24]]){ circ(G,'#8e44d6',a*s,b*s,s*0.12); circ(G,'rgba(255,255,255,.5)',a*s-s*0.04,b*s-s*0.04,s*0.035); }
+      G.strokeStyle='#6d4c1d'; G.lineWidth=s*0.05; G.beginPath(); G.moveTo(0,-s*0.25); G.lineTo(s*0.04,-s*0.42); G.stroke(); ell(G,'#5fb33a',s*0.14,-s*0.36,s*0.12,s*0.06,-0.4); break;
     case 'clock':
       circ(G,'#ff5252',-s*0.26,-s*0.3,s*0.12); circ(G,'#ff5252',s*0.26,-s*0.3,s*0.12);
       circ(G,'#e53935',0,0,s*0.4); circ(G,'#fffdf5',0,0,s*0.31); box(G,'#333',-s*0.03,-s*0.25,s*0.06,s*0.26,s*0.02);
@@ -807,7 +844,7 @@ function respawn(){ const s=P.shoe,c=P.candy; P=newPlayer(); P.inv=D.inv; if(gs.
 function shoot(){
   let empties=bubbles.filter(b=>!b.foe&&b.letter===undefined); if(bubbles.length>=26&&empties.length) bubbles.splice(bubbles.indexOf(empties[0]),1);
   const C=CHARS[gs.char];
-  const b={x:P.x+P.w/2+P.face*0.7,y:P.y+P.h*0.48,dir:P.face,phase:0,dist:0,r:0.3,R:D.rad,life:D.life,foe:null,t:0,col:C.bub,dd:Math.random()<.5?-1:1,wob:Math.random()*6,range:D.range*(P.candy?1.35:1)};
+  const b={x:P.x+P.w/2+P.face*0.7,y:P.y+P.h*0.48,dir:P.face,phase:0,dist:0,r:0.3,R:D.rad*(C.bigBub||1),life:D.life,foe:null,t:0,col:C.bub,dd:Math.random()<.5?-1:1,wob:Math.random()*6,range:D.range*(P.candy?1.35:1)*(C.bigBub?1.15:1)};
   if(b.x-0.3<2||b.x+0.3>30){ b.x=clamp(b.x,2+b.R,30-b.R); b.phase=1; b.r=b.R; }
   bubbles.push(b); SFX.shoot(); P.shootA=0.18;
 }
@@ -1164,7 +1201,7 @@ function showEnding(){
   show('ending'); drawEnd();
 }
 function drawEnd(){ const c=$('endCv'), G=c.getContext('2d'), t=performance.now()/1000; G.setTransform(1,0,0,1,0,0); G.clearRect(0,0,c.width,c.height); const s=c.width/8; G.setTransform(s,0,0,s,0,0);
-  drawChar(G,CHARS[0],2.6,3.6+Math.abs(Math.sin(t*4))*-0.25,2.4,1,t,Math.sin(t*8)); drawChar(G,CHARS[1],5.4,3.6+Math.abs(Math.sin(t*4+1.5))*-0.25,2.4,-1,t,Math.sin(t*8+1));
+  CHARS.forEach((C,i)=>{ const x=8/(CHARS.length+1)*(i+1); drawChar(G,C,x,3.7+Math.abs(Math.sin(t*4+i*1.5))*-0.25,2.2,i===CHARS.length-1?-1:1,t,Math.sin(t*8+i)); });
   for(let i=0;i<6;i++) drawBubble(G,1+i*1.2,0.7+Math.sin(t*2+i)*0.2,0.3,EXTC[i]); heart(G,'#ff5f8f',4,2.0+Math.sin(t*3)*0.1,0.35); }
 function gameOver(){
   state='over'; persist();
@@ -1251,7 +1288,7 @@ function render(){
       g.save(); const cx=P.x+P.w/2, fy=P.y+P.h;
       if(P.dead){ g.translate(cx,P.y+P.h/2); g.rotate(P.rot); g.translate(-cx,-(P.y+P.h/2)); }
       const sq=P.shootA>0?1+P.shootA*0.5:1; g.translate(cx,fy); g.scale(sq,1/sq); g.translate(-cx,-fy);
-      drawChar(g,C,cx,fy,P.h*(C.dog?1.4:1.25),P.face,P.t,walk);
+      drawChar(g,C,cx,fy,P.h*(C.dog?1.4:C.bora?1.3:1.25),P.face,P.t,walk);
       g.restore();
       if(P.shootA>0){ drawBubble(g,cx+P.face*1.0,P.y+P.h*0.5,0.18+(0.18-P.shootA)*1.5,C.bub); }
       if(P.shoe&&P.onGround&&Math.abs(P.vx)>0&&Math.random()<0.3) parts.push({x:cx-P.face*0.6,y:fy-0.1,vx:-P.face*2,vy:-1,t:0,life:0.3,col:'#fff',r:0.12});
