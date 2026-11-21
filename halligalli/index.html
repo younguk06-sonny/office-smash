@@ -529,14 +529,30 @@ const SFX={ac:null,on:true,nb:null,
   bell(){ if(!this.ok()) return; const t=this.ac.currentTime;
     [[1,0.32,1.9],[2.0,0.06,1.0],[2.76,0.16,1.2],[5.4,0.08,0.7],[8.93,0.03,0.4]].forEach(([m,a,d])=>this.tone(1250*m,t,d,a));
     this.noise(t,0.04,0.25,'highpass',3000); },
-  flip(){ if(!this.ok()) return; const t=this.ac.currentTime; this.noise(t,0.09,0.35,'bandpass',1900,0.8,900); },
-  tap(){ if(!this.ok()) return; const t=this.ac.currentTime; this.noise(t,0.05,0.4,'lowpass',1100); this.tone(160,t,0.08,0.18,'sine',90); },
-  whoosh(){ if(!this.ok()) return; const t=this.ac.currentTime; this.noise(t,0.38,0.25,'bandpass',500,1.2,2600); },
+  // 포커 카드: 플라스틱 카드를 튕겨 뒤집는 '착' 소리
+  flip(){ if(!this.ok()) return; const t=this.ac.currentTime;
+    this.noise(t,0.018,0.5,'highpass',5200,0.7);            // 카드 모서리 튕김
+    this.noise(t+0.012,0.07,0.18,'bandpass',3400,0.9,6000); // 공기 가르는 소리
+    this.noise(t+0.03,0.012,0.35,'highpass',4200,0.7); },
+  // 펠트 위에 카드가 미끄러져 내려앉는 소리
+  tap(){ if(!this.ok()) return; const t=this.ac.currentTime;
+    this.noise(t,0.11,0.22,'bandpass',2600,0.6,1400);
+    this.noise(t,0.022,0.3,'highpass',3600,0.7); },
+  // 여러 장을 쓸어 모으는 소리
+  whoosh(){ if(!this.ok()) return; const t=this.ac.currentTime;
+    this.noise(t,0.32,0.2,'bandpass',1800,0.8,4200);
+    for(let i=0;i<7;i++) this.noise(t+0.05+i*0.035,0.015,0.22,'highpass',4500,0.7); },
   good(){ if(!this.ok()) return; const t=this.ac.currentTime; [523,659,784,1047].forEach((f,i)=>this.tone(f,t+i*0.07,0.22,0.16,'triangle')); },
   bad(){ if(!this.ok()) return; const t=this.ac.currentTime; this.tone(220,t,0.2,0.12,'square',160); this.tone(196,t+0.22,0.3,0.12,'square',120); },
   out(){ if(!this.ok()) return; const t=this.ac.currentTime; [660,520,392,262].forEach((f,i)=>this.tone(f,t+i*0.11,0.2,0.12,'triangle')); },
   win(){ if(!this.ok()) return; const t=this.ac.currentTime; [[523,0],[659,.12],[784,.24],[1047,.36],[784,.52],[1047,.64]].forEach(([f,d])=>{this.tone(f,t+d,0.28,0.15,'triangle');this.tone(f*2,t+d,0.18,0.04,'sine');}); },
-  deal(){ if(!this.ok()) return; const t=this.ac.currentTime; for(let i=0;i<10;i++) this.noise(t+i*0.07,0.05,0.22,'bandpass',2200,1); },
+  // 리플 셔플 + 딜링
+  deal(){ if(!this.ok()) return; const t=this.ac.currentTime;
+    for(let i=0;i<26;i++) this.noise(t+i*0.018+Math.random()*0.006,0.012,0.16+Math.random()*0.08,'highpass',4000+Math.random()*2000,0.7);
+    this.noise(t+0.5,0.06,0.3,'bandpass',2500,0.8);
+    for(let i=0;i<10;i++){ this.noise(t+0.62+i*0.06,0.016,0.32,'highpass',5000,0.7); this.noise(t+0.63+i*0.06,0.05,0.12,'bandpass',3000,0.8,5000); } },
+  // 벌칙 카드 건네기
+  pass(){ if(!this.ok()) return; const t=this.ac.currentTime; this.noise(t,0.14,0.18,'bandpass',2200,0.7,4800); this.noise(t+0.13,0.02,0.25,'highpass',4200,0.7); },
   click(){ if(!this.ok()) return; const t=this.ac.currentTime; this.tone(880,t,0.05,0.08,'triangle'); },
 };
 function buzz(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms);}catch(e){} }
@@ -552,9 +568,9 @@ function saveRec(r){ try{localStorage.setItem('hg_rec',JSON.stringify(r));}catch
 SFX.on=cfg.sound;
 
 const DIFF={
-  easy:  {name:'쉬움',rt:[1.55,2.6],miss:.35,fals:.05,flip:[1.15,1.55]},
-  normal:{name:'보통',rt:[0.9,1.45],miss:.15,fals:.03,flip:[0.8,1.1]},
-  hard:  {name:'어려움',rt:[0.48,0.82],miss:.05,fals:.015,flip:[0.55,0.8]},
+  easy:  {name:'쉬움',rt:[0.95,1.5],miss:.1,fals:.03,flip:[0.5,0.75],fly:.24},
+  normal:{name:'보통',rt:[0.6,0.95],miss:.04,fals:.015,flip:[0.38,0.55],fly:.2},
+  hard:  {name:'어려움',rt:[0.36,0.58],miss:.01,fals:.005,flip:[0.28,0.4],fly:.17},
 };
 
 /* ---------------- 레이아웃 ---------------- */
@@ -718,7 +734,10 @@ function pilePos(i,c){ const k=P[i].pileC; return {x:k.x,y:k.y,s:1,r:c?c.rot:0,f
 function beginTurn(i){
   S.turn=i; S.turnT=GT; cancel('flip');
   const p=P[i];
-  if(!p.human) later(rand(...DIFF[cfg.diff].flip),()=>flip(i),'flip');
+  const d=DIFF[cfg.diff];
+  // 5개가 깔려 있으면 다음 카드는 종 칠 틈을 주고 나서 냄
+  const wait=fiveInfo().ok?d.rt[1]+0.45:0;
+  if(!p.human) later(Math.max(rand(...d.flip),wait),()=>flip(i),'flip');
   else if(cfg.auto) later(1.05,()=>flip(i),'flip');
 }
 function advance(){
@@ -732,7 +751,7 @@ function flip(i){
   cancel('flip');
   const c=p.deck.shift(); c.rot=rand(-0.16,0.16);
   SFX.flip();
-  S.flight=flyCard(c,deckPos(i),pilePos(i,c),{dur:.3,flip:true,owner:i,onEnd:()=>{
+  S.flight=flyCard(c,deckPos(i),pilePos(i,c),{dur:p.human?.26:DIFF[cfg.diff].fly,flip:true,owner:i,onEnd:()=>{
     S.flight=null; p.pile.push(c); SFX.tap(); S.landT=GT;
     for(let k=0;k<5;k++) spark(P[i].pileC.x+rand(-L.cw*.5,L.cw*.5),P[i].pileC.y+L.ch*.5,'rgba(255,255,255,.7)',1);
     onBoardChange(); advance();
@@ -792,7 +811,7 @@ function ringBad(i){
   for(let k=0;k<8;k++) spark(L.bell.x,L.bell.y,'#ff5252',2);
   later(0.4,()=>{
     let d=0;
-    P.forEach((q,j)=>{ if(j===i||q.out||!p.deck.length) return; const c=p.deck.shift(); q.deck.push(c); flyCard(c,deckPos(i),deckPos(j),{dur:.42,delay:d,flip:false}); d+=0.08; });
+    P.forEach((q,j)=>{ if(j===i||q.out||!p.deck.length) return; later(d,()=>SFX.pass()); const c=p.deck.shift(); q.deck.push(c); flyCard(c,deckPos(i),deckPos(j),{dur:.42,delay:d,flip:false}); d+=0.08; });
     later(0.6+d,()=>{ S.reveal=null; if(checkElim()) return; S.lock=false;
       const cur=P[S.turn]; if(cur&&!cur.out&&cur.deck.length) beginTurn(S.turn); else advance(); });
   });
