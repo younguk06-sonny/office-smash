@@ -342,6 +342,19 @@ let AC=null;
 function ac(){if(!S.sound)return null;if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return null}}if(AC.state==='suspended')AC.resume();return AC}
 function tone(f,d=.12,type='square',v=.06,when=0,f2){const a=ac();if(!a)return;const t=a.currentTime+when;const o=a.createOscillator(),gn=a.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);gn.gain.setValueAtTime(v,t);gn.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(gn).connect(a.destination);o.start(t);o.stop(t+d+.03)}
 function noise(d=.5,v=.35,lp=900,when=0){const a=ac();if(!a)return;const t=a.currentTime+when;const len=Math.floor(a.sampleRate*d);const b=a.createBuffer(1,len,a.sampleRate);const ch=b.getChannelData(0);for(let i=0;i<len;i++)ch[i]=(Math.random()*2-1)*Math.pow(1-i/len,2);const s=a.createBufferSource();s.buffer=b;const f=a.createBiquadFilter();f.type='lowpass';f.frequency.value=lp;const gn=a.createGain();gn.gain.value=v;s.connect(f).connect(gn).connect(a.destination);s.start(t)}
+const MN=n=>440*Math.pow(2,(n-69)/12);
+function hat(when=0,v=.04){const a=ac();if(!a)return;const t=a.currentTime+when;const len=Math.floor(a.sampleRate*.04);const b=a.createBuffer(1,len,a.sampleRate);const ch=b.getChannelData(0);for(let i=0;i<len;i++)ch[i]=(Math.random()*2-1)*(1-i/len);const s=a.createBufferSource();s.buffer=b;const f=a.createBiquadFilter();f.type='highpass';f.frequency.value=7000;const gn=a.createGain();gn.gain.value=v;s.connect(f).connect(gn).connect(a.destination);s.start(t)}
+function kick(when=0,v=.28){tone(120,.16,'sine',v,when,45)}
+/* 노래하는 목소리 느낌(비브라토) */
+function voice(f,d,when=0,v=.075){const a=ac();if(!a)return;const t=a.currentTime+when;const o=a.createOscillator(),o2=a.createOscillator(),l=a.createOscillator(),lg=a.createGain(),g=a.createGain(),g2=a.createGain();
+  o.type='triangle';o2.type='sine';o.frequency.value=f;o2.frequency.value=f*2;l.frequency.value=5.5;lg.gain.value=f*.012;l.connect(lg);lg.connect(o.frequency);lg.connect(o2.frequency);g2.gain.value=.3;
+  g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(v,t+.02);g.gain.setValueAtTime(v,t+Math.max(.03,d-.06));g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(g);o2.connect(g2).connect(g);g.connect(a.destination);[o,o2,l].forEach(x=>{x.start(t);x.stop(t+d+.05)})}
+/* 반복 배경음 스케줄러 */
+const Bgm={iv:null,next:0,step:0,dur:.25,fn:null,
+  start(fn,dur){this.stop();this.fn=fn;this.dur=dur;this.step=0;this.next=0;this.iv=setInterval(()=>this.tick(),25)},
+  tick(){const a=ac();if(!a)return;if(this.next<a.currentTime-.2)this.next=a.currentTime+.05;while(this.next<a.currentTime+.12){try{this.fn(this.step,Math.max(0,this.next-a.currentTime))}catch(e){}this.next+=this.dur;this.step++}},
+  stop(){clearInterval(this.iv);this.iv=null}};
 const SFX={
   tap:()=>tone(880,.06,'square',.04),
   ok:()=>{tone(660,.08,'square',.05);tone(990,.12,'square',.05,.08)},
@@ -456,7 +469,20 @@ function G1(){
   b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('pointerleave',off);
   this.key=e=>{if(e.code==='Space'){if(e.type==='keydown'&&!e.repeat)on(e);if(e.type==='keyup')off(e)}};
   addEventListener('keydown',this.key);addEventListener('keyup',this.key);
-  this.cleanup=()=>{removeEventListener('keydown',this.key);removeEventListener('keyup',this.key)};
+  this.cleanup=()=>{removeEventListener('keydown',this.key);removeEventListener('keyup',this.key);Bgm.stop()};
+  const self=this;
+  Bgm.start((st,w)=>{if(cur!==self||self.done){Bgm.stop();return}const ph=self.phase,s8=st%8,bar=Math.floor(st/8)%4;
+    if(ph==='chant'||ph==='back'){const roots=[48,45,41,43];
+      if(s8===0||s8===4)tone(MN(roots[bar]),.22,'triangle',.08,w);
+      if(s8===0)kick(w,.18);if(s8===4)kick(w,.12);
+      if(s8%2===1)hat(w,.035);
+      if(s8===2||s8===6)tone(MN(roots[bar]+19),.09,'square',.022,w);
+      if(s8===3||s8===7)tone(MN(roots[bar]+24),.07,'square',.016,w);
+    }else if(ph==='turn'||ph==='watch'){
+      if(s8===0||s8===4)tone(70,.16,'sine',.3,w,42);if(s8===1||s8===5)tone(62,.12,'sine',.2,w,38);
+      if(s8===0)tone(MN(37),.5,'sawtooth',.025,w);
+    }else if(ph==='ready'){if(s8===0)tone(MN(60+bar*2),.1,'triangle',.04,w)}
+  },.22);
   banner('무궁화꽃이 피었습니다','술래봇이 보면 멈춰요!',1800);
   this.countdown=3.2;
 }
@@ -487,7 +513,7 @@ G1.prototype.update=function(dt){
   let since=0;
   if(this.phase==='chant'){this.ct+=dt;
     const idx=this.sylT.filter(t=>t<=this.ct).length-1;
-    if(idx!==this.sylIdx){this.sylIdx=idx;const notes=[523,523,587,659,587,523,587,659,784,659];tone(notes[idx]||523,.14,'triangle',.07)}
+    if(idx!==this.sylIdx){this.sylIdx=idx;const notes=[67,67,64,67,69,67,64,62,64,60];const nx=idx+1<this.sylT.length?this.sylT[idx+1]:this.dur;voice(MN(notes[idx]||67),clamp(nx-this.sylT[idx],.12,.6)*.95,0,.08)}
     if(this.ct>=this.dur){this.phase='turn';this.since=0;SFX.turn()}
   }else if(this.phase==='turn'||this.phase==='watch'){
     this.since+=dt;since=this.since;this.robotTurn=Math.min(1,this.since/.28);
@@ -625,6 +651,17 @@ G2.prototype.action=function(a){if(this.done)return;ac();const me=this.me;if(me.
   else{if(this.D.wrongFail){me.act=a;me.actT=.5;this.fail(me,`${ACTS[a].t}가 아니라 ${ACTS[s.act].t}였어요`)}else{SFX.bad();floatText(this.floats,this.jx(S.player),this.groundY-this.s*1.25,ACTS[s.act].t+'!','#ffd23f')}}
 };
 G2.prototype.resize=function(){};
+/* 꼬마야 꼬마야 노래: 줄 한 바퀴 = 한 마디 */
+G2.prototype.sing=function(n){if(!n||this.done)return;const per=1/this.w;
+  const syl=n.word.replace(/[^가-힣]/g,'').split('');
+  let mel;if(n.bi==null){mel=n.word.startsWith('준비')?[67,67]:[72,67,72]}
+  else mel=[[67,64,67],[67,64,67],[69,69,67],[64,62,60]][n.bi];
+  if(n.words&&n.words[0]==='꼬마야'&&n.words[2]==='잘'&&n.bi===3)mel=[62,60];
+  const k=syl.length||1;const d=per*.92/k;
+  syl.forEach((c,i)=>{const m=i<mel.length-1?mel[i]:mel[mel.length-1];voice(MN(m+(this.round>2?2:0)),d*.9,i*d,.08)});
+  const bass=[48,48,53,55][n.bi==null?0:n.bi];tone(MN(bass-12+(this.round>2?2:0)),per*.45,'triangle',.08);
+  kick(0,.22);hat(per/2,.04);hat(per*.25,.02);hat(per*.75,.02);
+};
 G2.prototype.jx=function(ci){const j=this.J.find(x=>x.ci===ci);const n=this.J.length;return W*(.5+(j.lane-(n-1)/2)*.15)};
 G2.prototype.height=function(j){if(j.jt<0)return 0;const t=j.jt/this.D.J;return 4*t*(1-t)};
 G2.prototype.fail=function(j,why){if(j.out)return;j.out=true;j.outAt=this.gcross;j.outRound=this.round;j.jt=-1;SFX.out();
@@ -654,6 +691,7 @@ G2.prototype.onCross=function(){
   if(n&&n.first){this.J.forEach(j=>{j.actDone=false;if(j.ci!==S.player&&!j.out&&n.act){const miss=Math.random()<this.D.base*2*Math.pow(this.round,1.3);j.aiActAt=miss?-1:this.cross+randi(1,2)}})}
   if(n&&n.act){this.J.forEach(j=>{if(j.ci!==S.player&&!j.out&&j.aiActAt===this.cross){j.pendingAct=n.act;j.pendingT=rand(.1,.4)}})}
   this.updActs();
+  if(n)this.sing(n);
   if(this.cross>=this.script.length){this.phase='pause';this.pt=1.4;SFX.ok();this.J.forEach(j=>{j.jt=-1})}
 };
 G2.prototype.update=function(dt){
@@ -661,7 +699,7 @@ G2.prototype.update=function(dt){
   const D=this.D;
   this.J.forEach(j=>{if(j.jt>=0){j.jt+=dt;if(j.jt>=D.J)j.jt=-1}if(j.actT>0){j.actT-=dt;if(j.actT<=0)j.act=null}if(j.out)j.lie=Math.min(1,j.lie+dt*3);
     if(j.pendingAct&&!j.out){j.pendingT-=dt;if(j.pendingT<=0){j.act=j.pendingAct;j.actT=.5;j.actDone=true;j.pendingAct=null}}});
-  if(this.phase==='intro'){this.pt-=dt;if(this.pt<=0){this.phase='spin';this.updActs()}return}
+  if(this.phase==='intro'){this.pt-=dt;if(this.pt<=0){this.phase='spin';this.updActs();this.sing(this.script[0])}return}
   if(this.phase==='pause'){this.pt-=dt;if(this.pt<=0){this.round++;this.startRound(false)}return}
   const prev=this.theta;this.theta+=dt*this.w*Math.PI*2;
   // AI 점프
