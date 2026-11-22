@@ -171,7 +171,7 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
     <div class="seg" id="diffSeg" style="margin-top:6px">
       <button data-d="0">쉬움</button><button data-d="1">보통</button><button data-d="2">어려움</button>
     </div>
-    <button class="big b-go" id="btnStart">▶ 게임 시작</button>
+    <div class="row"><button class="big b-go" id="btnStart" style="flex:1.6">▶ 게임 시작</button><button class="big b-pink" id="btnElev" style="flex:1">🛗 엘리베이터</button></div>
     <div class="row">
       <button class="big b-org" id="btnShop">🧍 캐릭터</button>
       <button class="big b-blue" id="btnRec">🏆 기록</button>
@@ -261,6 +261,16 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
   <div class="panel">
     <div style="font-size:24px;font-weight:900;letter-spacing:-.5px;white-space:nowrap">게임을 종료하시겠습니까?</div>
     <div class="row" style="margin-top:6px"><button class="big b-go" id="exitNo">계속하기</button><button class="big b-gray" id="exitYes">종료</button></div>
+  </div>
+</div>
+<div id="elev" class="screen hide" style="z-index:27">
+  <div class="panel">
+    <div style="font-size:24px;font-weight:900;letter-spacing:-.5px;white-space:nowrap">🛗 엘리베이터 타기</div>
+    <div style="font-weight:800;color:#6b7896;margin-top:4px;white-space:nowrap">코인을 내고 높은 층에서 출발해요 · 내 코인 <span class="coin" style="vertical-align:-3px;width:15px;height:15px"></span> <span id="elCoin">0</span></div>
+    <button class="big b-blue elb" data-f="200" data-c="50">200층 · <span class="coin" style="vertical-align:-3px"></span> 50</button>
+    <button class="big b-org elb" data-f="500" data-c="100">500층 · <span class="coin" style="vertical-align:-3px"></span> 100</button>
+    <button class="big b-pink elb" data-f="1000" data-c="200">🚀 우주층(1000층) · <span class="coin" style="vertical-align:-3px"></span> 200</button>
+    <button class="big b-gray" id="elCancel">그냥 1층부터 할래요</button>
   </div>
 </div>
 <div id="toast"></div>
@@ -995,6 +1005,7 @@ const SFX={
   mile(){[523,659,784,1047].forEach((f,i)=>tone(f,0.14,'square',0.05,0,i*0.09));},
   click(){tone(660,0.05,'triangle',0.08);},
   buy(){[784,988,1175,1568].forEach((f,i)=>tone(f,0.12,'triangle',0.09,0,i*0.07));},
+  ding(){ tone(1319,0.25,'sine',0.08); tone(1047,0.4,'sine',0.08,0,0.22); },
   roll(){tone(300+Math.random()*600,0.05,'square',0.03);},
   fart(){ tone(95+Math.random()*30,0.28,'sawtooth',0.09,0.55); tone(70,0.2,'square',0.05,0.7,0.05); },
   bark(){ if(!save.sound) return; const a=ac(); if(!a) return;
@@ -1034,11 +1045,12 @@ const ZONES=[
  {at:100, name:'구름 위',    top:'#4fa8f2',bot:'#fff3cf',blk:'#ffb300'},
  {at:200, name:'노을 계단',  top:'#ff7a59',bot:'#ffd38a',blk:'#e64a19'},
  {at:300, name:'보랏빛 하늘',top:'#5b3fa8',bot:'#ff8fb1',blk:'#ab47bc'},
- {at:450, name:'밤하늘',     top:'#0d1440',bot:'#34428f',blk:'#3f51b5'},
- {at:600, name:'우주',       top:'#02020c',bot:'#1b0b3a',blk:'#00acc1'},
- {at:800, name:'은하수',     top:'#05000f',bot:'#3a0a4a',blk:'#d81b60'},
- {at:1000,name:'전설의 계단',top:'#120900',bot:'#4a3000',blk:'#ffc400'},
- {at:1500,name:'무한의 끝?', top:'#000000',bot:'#002b2b',blk:'#1de9b6'},
+ {at:450, name:'밤하늘 계단', top:'#0d1440',bot:'#34428f',blk:'#3f51b5'},
+ {at:600, name:'높은 하늘',   top:'#2b3a8f',bot:'#7e9bff',blk:'#00acc1'},
+ {at:800, name:'구름 꼭대기', top:'#1a1f5c',bot:'#5c6bc0',blk:'#d81b60'},
+ {at:1000,name:'🚀 우주',     top:'#02020c',bot:'#140a33',blk:'#7c4dff'},
+ {at:1300,name:'은하수',      top:'#05000f',bot:'#3a0a4a',blk:'#ff4081'},
+ {at:1700,name:'전설의 우주', top:'#000000',bot:'#002b2b',blk:'#ffc400'},
 ];
 function zoneOf(i){let z=0;for(let k=0;k<ZONES.length;k++) if(i>=ZONES[k].at) z=k; return z;}
 
@@ -1049,6 +1061,7 @@ const cam={x:0,y:0};
 let particles=[], pops=[], conts=0, lastRec=null;
 // ⏱ 타임어택 밸런스
 const TA={start:[50,40,32], step:50, bonus:(k,d)=>Math.max(d===0?14:d===1?10:8, [34,30,25][d]-2*(k-1)), penalty:[2,3,4], stun:0.35};
+let baseFloor=0, elevRide=null;
 let taTime=0, taNext=50, taK=0, stunT=0, lives=0, hurried=false, lastTick=99;
 const useHearts=()=>!isTA()&&save.diff===0;
 function drawHearts(){ const h=$('hearts'); h.classList.toggle('hide',!useHearts()||state==='menu'); h.textContent='❤️'.repeat(Math.max(0,lives))+'🤍'.repeat(Math.max(0,3-lives)); }
@@ -1068,6 +1081,7 @@ function resetGame(){
   genUntil(80);
   P.i=0; P.face=xs[1]-xs[0]; P.from={x:0,y:0}; P.to={x:0,y:0}; P.t0=-1; P.fall=null;
   score=0; gauge=1; started=false; gotCoins=0; particles=[]; pops=[]; conts=0; lastRec=null;
+  baseFloor=0; elevRide=null;
   taTime=TA.start[save.diff]; taNext=TA.step; taK=0; stunT=0; lives=3; hurried=false; lastTick=99;
   cam.x=0; cam.y=0;
 }
@@ -1169,7 +1183,7 @@ function daySky(){ for(let k=0;k<DAYKEYS.length-1;k++){ const a=DAYKEYS[k],b=DAY
 function nightAmt(){ const t=dayT; if(t<0.5) return 0; if(t<0.6) return (t-0.5)/0.1; if(t<0.9) return 1; if(t<0.98) return 1-(t-0.9)/0.08; return 0; }
 let NIGHT=0, SPACE=0;
 function drawBg(h){
-  SPACE=clamp((h-520)/120,0,1); NIGHT=Math.max(nightAmt(),SPACE);
+  SPACE=clamp((h-900)/100,0,1); NIGHT=Math.max(nightAmt(),SPACE);
   const d=daySky(), z=skyAt(h);
   const top=mix(d.top,z.top,SPACE), bot=mix(d.bot,z.bot,SPACE);
   const gr=g.createLinearGradient(0,0,0,H); gr.addColorStop(0,top); gr.addColorStop(1,bot);
@@ -1177,16 +1191,41 @@ function drawBg(h){
   const starA=NIGHT, cloudA=(1-SPACE)*(1-nightAmt()*0.55);
   if(starA>0){ g.fillStyle='#fff'; for(const s of STARS){ const yy=((s.y*H*1.4 - cam.y*0.08)%(H*1.4)+H*1.4)%(H*1.4)-H*0.2; const xx=((s.x*W*1.2 - cam.x*0.05)%(W*1.2)+W*1.2)%(W*1.2)-W*0.1; g.globalAlpha=starA*(0.5+0.5*Math.sin(now*2+s.tw)); g.fillRect(xx,yy,s.r,s.r);} g.globalAlpha=1; }
   drawSunMoon();
-  if(h>520){ const a=clamp((h-520)/100,0,1); g.globalAlpha=a;
-    const py=((H*0.25 - cam.y*0.03)%(H*2)+H*2)%(H*2)-H*0.5;
-    circ(g,'#ff7043',W*0.82,py,S*1.3); circ(g,'#ffab91',W*0.78,py-S*0.4,S*0.3);
-    g.strokeStyle='rgba(255,224,178,.8)'; g.lineWidth=S*0.12; g.beginPath(); g.ellipse(W*0.82,py,S*2,S*0.45,-0.3,0,Math.PI*2); g.stroke();
-    const py2=((H*1.1 - cam.y*0.02)%(H*2)+H*2)%(H*2)-H*0.5;
-    circ(g,'#7e57c2',W*0.15,py2,S*0.8); circ(g,'#b39ddb',W*0.12,py2-S*0.25,S*0.2);
-    g.globalAlpha=1; }
+  if(SPACE>0) drawSpace(h);
   if(cloudA>0){ g.globalAlpha=cloudA*0.9; for(const c of CLOUDS){ const yy=((c.y*(H+300) - cam.y*0.25)%(H+300)+(H+300))%(H+300)-150; const xx=((c.x*(W+300) - cam.x*0.2)%(W+300)+(W+300))%(W+300)-150; cloud(xx,yy,S*c.s);} g.globalAlpha=1; }
 }
+/* ===== 우주 배경 (1000층~) ===== */
+const BIGSTARS=Array.from({length:40},()=>({x:Math.random(),y:Math.random(),r:rand(1.2,2.6),tw:rand(0,6)}));
+const PLANETS=[{t:'saturn',x:0.8,y:0.05,s:1.25},{t:'earth',x:0.18,y:0.32,s:1.0},{t:'mars',x:0.86,y:0.55,s:0.6},{t:'jupiter',x:0.12,y:0.78,s:1.45},{t:'neptune',x:0.7,y:0.92,s:0.8},{t:'moon',x:0.45,y:0.65,s:0.45},{t:'ringpink',x:0.35,y:0.18,s:0.7}];
+function drawSpace(h){
+  const A=SPACE; g.globalAlpha=A;
+  // 성운
+  const neb=[[0.25,0.3,'rgba(186,104,200,.22)'],[0.8,0.65,'rgba(79,195,247,.18)'],[0.5,0.95,'rgba(255,64,129,.15)']];
+  neb.forEach(([nx,ny,col],k)=>{ const y=((ny*H*2 - cam.y*0.03)%(H*2)+H*2)%(H*2)-H*0.4, x=nx*W, r=Math.max(W,H)*0.45; const gr=g.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,col); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.fillRect(x-r,y-r,r*2,r*2); });
+  // 반짝 큰 별
+  for(const s2 of BIGSTARS){ const yy=((s2.y*H*1.6 - cam.y*0.06)%(H*1.6)+H*1.6)%(H*1.6)-H*0.3, xx=s2.x*W, tw=0.5+0.5*Math.sin(now*3+s2.tw); g.globalAlpha=A*tw; star(g,'#fffde7',xx,yy,s2.r*2.2); }
+  g.globalAlpha=A;
+  // 지구 지평선 (1000층 막 도착했을 때 아래에)
+  if(h<1200){ const ey=H+H*0.55+(h-1000)*SH*0.12; const R2=W*1.3; const gr=g.createRadialGradient(W/2,ey,R2*0.8,W/2,ey,R2*1.05); gr.addColorStop(0,'rgba(79,195,247,0)'); gr.addColorStop(0.9,'rgba(129,212,250,.55)'); gr.addColorStop(1,'rgba(129,212,250,0)'); g.fillStyle=gr; g.beginPath(); g.arc(W/2,ey,R2*1.05,0,7); g.fill(); circ(g,'#1e88e5',W/2,ey,R2*0.9); ell(g,'#43a047',W*0.3,ey-R2*0.82,R2*0.18,R2*0.06,0.1); ell(g,'#66bb6a',W*0.72,ey-R2*0.86,R2*0.12,R2*0.04,-0.1); g.globalAlpha=A*0.8; ell(g,'#fff',W*0.5,ey-R2*0.88,R2*0.2,R2*0.025,0); g.globalAlpha=A; }
+  // 행성들
+  for(const p of PLANETS){ const y=((p.y*H*2.4 - cam.y*0.05)%(H*2.4)+H*2.4)%(H*2.4)-H*0.4, x=p.x*W - cam.x*0.02, r=S*p.s; planet(p.t,x,y,r); }
+  g.globalAlpha=1;
+}
+function planet(t,x,y,r){
+  switch(t){
+    case 'saturn': g.strokeStyle='rgba(255,224,178,.85)'; g.lineWidth=r*0.18; g.beginPath(); g.ellipse(x,y,r*1.9,r*0.5,-0.35,Math.PI,2*Math.PI); g.stroke();
+      circ(g,'#ffcc80',x,y,r); ell(g,'#ffb74d',x,y-r*0.3,r*0.95,r*0.12,0); ell(g,'#ffe0b2',x,y+r*0.25,r*0.9,r*0.1,0);
+      g.beginPath(); g.ellipse(x,y,r*1.9,r*0.5,-0.35,0,Math.PI); g.stroke(); break;
+    case 'earth': circ(g,'#1e88e5',x,y,r); ell(g,'#43a047',x-r*0.3,y-r*0.2,r*0.4,r*0.3,0.4); ell(g,'#66bb6a',x+r*0.35,y+r*0.3,r*0.3,r*0.22,-0.3); ell(g,'rgba(255,255,255,.85)',x,y-r*0.6,r*0.5,r*0.1,0); ell(g,'rgba(255,255,255,.7)',x+r*0.2,y+r*0.05,r*0.35,r*0.07,0.2); break;
+    case 'mars': circ(g,'#e64a19',x,y,r); circ(g,'#bf360c',x-r*0.3,y-r*0.2,r*0.2); circ(g,'#bf360c',x+r*0.35,y+r*0.25,r*0.15); circ(g,'#ff8a65',x-r*0.35,y-r*0.4,r*0.12); break;
+    case 'jupiter': circ(g,'#ffe0b2',x,y,r); g.save(); g.beginPath(); g.arc(x,y,r,0,7); g.clip(); [['#d7a86e',-0.55],['#bf8a5a',-0.2],['#e0b088',0.15],['#bf8a5a',0.5]].forEach(([cl,o])=>box(g,cl,x-r,y+o*r,r*2,r*0.18)); ell(g,'#e64a19',x+r*0.35,y+r*0.32,r*0.22,r*0.12,0); g.restore(); break;
+    case 'neptune': circ(g,'#3f51b5',x,y,r); ell(g,'#7986cb',x,y-r*0.25,r*0.9,r*0.12,0); circ(g,'#283593',x+r*0.3,y+r*0.2,r*0.15); break;
+    case 'moon': circ(g,'#cfd8dc',x,y,r); circ(g,'#b0bec5',x-r*0.3,y-r*0.2,r*0.22); circ(g,'#b0bec5',x+r*0.3,y+r*0.3,r*0.15); break;
+    case 'ringpink': g.strokeStyle='rgba(248,187,208,.85)'; g.lineWidth=r*0.15; g.beginPath(); g.ellipse(x,y,r*1.7,r*0.45,0.4,Math.PI,2*Math.PI); g.stroke(); circ(g,'#ba68c8',x,y,r); circ(g,'#ce93d8',x-r*0.35,y-r*0.35,r*0.25); g.beginPath(); g.ellipse(x,y,r*1.7,r*0.45,0.4,0,Math.PI); g.stroke(); break;
+  }
+}
 function drawSunMoon(){
+  if(SPACE>=1) return; g.globalAlpha=1-SPACE;
   const r=Math.min(W,H)*0.07+S*0.3;
   // 해: dayT 0.0 ~ 0.56
   if(dayT<0.56){ const p=dayT/0.56, x=W*(0.08+0.84*p), y=H*0.62-Math.sin(Math.PI*p)*H*0.5;
@@ -1201,9 +1240,22 @@ function drawSunMoon(){
     circ(g,'#fff8e1',x,y,mr); g.save(); g.beginPath(); g.arc(x,y,mr,0,7); g.clip(); circ(g,mix(daySky().top,'#0d1440',0.3),x+mr*0.55,y-mr*0.25,mr*0.9); g.restore();
     circ(g,'#ffe082',x-mr*0.45,y+mr*0.3,mr*0.12); circ(g,'#ffe082',x-mr*0.2,y-mr*0.45,mr*0.08);
     g.fillStyle='#5d4037'; circ(g,'#5d4037',x-mr*0.5,y-mr*0.05,mr*0.07); g.strokeStyle='#5d4037'; g.lineWidth=mr*0.06; g.beginPath(); g.arc(x-mr*0.45,y+mr*0.2,mr*0.18,0.2*Math.PI,0.8*Math.PI); g.stroke(); }
+  g.globalAlpha=1;
 }
 function cloud(x,y,s){g.fillStyle='#fff';g.beginPath();g.arc(x,y,s*0.6,0,7);g.arc(x+s*0.6,y-s*0.25,s*0.7,0,7);g.arc(x+s*1.3,y,s*0.55,0,7);g.rect(x,y-s*0.1,s*1.3,s*0.6);g.fill();}
 
+function drawElevBack(x,y,cs){
+  const w=cs*0.95,h=cs*1.25; box(g,'rgba(0,0,0,.25)',x-w/2+4,y-h+4,w,h+cs*0.08,8);
+  box(g,'#cfd8dc',x-w/2,y-h,w,h+cs*0.08,8); box(g,'#eceff1',x-w/2+cs*0.06,y-h+cs*0.12,w-cs*0.12,h-cs*0.1,5);
+}
+function drawElevFront(x,y,cs){
+  const w=cs*0.95,h=cs*1.25;
+  g.globalAlpha=0.25; box(g,'#b3e5fc',x-w/2+cs*0.06,y-h+cs*0.12,w-cs*0.12,h-cs*0.1,5); g.globalAlpha=1;
+  g.strokeStyle='#90a4ae'; g.lineWidth=cs*0.06; rr(g,x-w/2,y-h,w,h+cs*0.08,8); g.stroke();
+  box(g,'#37474f',x-w*0.32,y-h-cs*0.28,w*0.64,cs*0.26,5);
+  g.fillStyle='#ffab00'; g.font=`900 ${Math.round(cs*0.18)}px sans-serif`; g.textAlign='center'; g.textBaseline='middle'; g.fillText('▲ '+score,x,y-h-cs*0.15);
+  g.strokeStyle='rgba(255,255,255,.7)'; g.lineWidth=2; for(let k=0;k<3;k++){ const ly=y+((now*900+k*120)%(cs*2))-cs*0.6; g.beginPath(); g.moveTo(x-w*0.75,ly); g.lineTo(x-w*0.62,ly); g.moveTo(x+w*0.62,ly); g.lineTo(x+w*0.75,ly); g.stroke(); }
+}
 function sx(x){return x-cam.x+W/2;} function sy(y){return y-cam.y+H*0.6;}
 function drawGround(){
   const gy=sy(wy(0)+SH);
@@ -1298,11 +1350,11 @@ function updFlyers(dt,h){
     const dir=Math.random()<0.5?1:-1, y=rand(H*0.08,H*0.55);
     let type;
     if(h<520 && NIGHT<0.5) type=['bird','bird','plane','balloon','bird','bird'][Math.floor(Math.random()*6)];
-    else if(h<600) type=['plane','owl','owl','firefly'][Math.floor(Math.random()*4)];
-    else type=['rocket','ufo','comet'][Math.floor(Math.random()*3)];
+    else if(SPACE<0.5) type=['plane','owl','owl','firefly','plane'][Math.floor(Math.random()*5)];
+    else type=['rocket','ufo','comet','satellite','satellite','shuttle','station','astro'][Math.floor(Math.random()*8)];
     const n=type==='bird'?Math.floor(rand(2,5)):1;
     const bc=['blue','yellow','pink','red','green'][Math.floor(Math.random()*5)];
-    for(let k=0;k<n;k++) flyers.push({type,bc,dir,x:dir>0?-60-k*28:W+60+k*28,y:y+k*(k%2?14:-6),v:{firefly:25,bird:rand(55,80),plane:rand(90,120),balloon:22,owl:60,rocket:150,ufo:80,comet:220}[type],ph:Math.random()*6});
+    for(let k=0;k<n;k++) flyers.push({type,bc,dir,x:dir>0?-60-k*28:W+60+k*28,y:y+k*(k%2?14:-6),v:{satellite:30,shuttle:110,station:18,astro:20,firefly:25,bird:rand(55,80),plane:rand(90,120),balloon:22,owl:60,rocket:150,ufo:80,comet:220}[type],ph:Math.random()*6});
   }
   for(let k=flyers.length-1;k>=0;k--){ const f=flyers[k]; f.x+=f.dir*f.v*dt; f.y-=dy; f.ph+=dt;
     if(f.x<-150||f.x>W+150||f.y>H+100||f.y<-200) flyers.splice(k,1); }
@@ -1323,6 +1375,12 @@ function drawFlyers(){
         g.globalAlpha=0.5; circ(g,'#ff8a80',9,-2,1.6); g.globalAlpha=1; // 볼
         g.save(); g.translate(-2,-2); g.scale(1,fl); ell(g,P2[1],-1,-6,7,5,-0.3); g.restore(); // 날개
         break;}
+      case 'satellite':{ g.save(); g.rotate(f.ph*0.4); box(g,'#cfd8dc',-8,-6,16,12,2); box(g,'#ffca28',-6,-4,12,8,1); for(const sd of [-1,1]){ box(g,'#90a4ae',sd>0?8:-11,-1,3,2); box(g,'#1565c0',sd>0?11:-31,-7,20,14,1); g.strokeStyle='#64b5f6'; g.lineWidth=1; for(let k=1;k<4;k++){ g.beginPath(); g.moveTo((sd>0?11:-31)+k*5,-7); g.lineTo((sd>0?11:-31)+k*5,7); g.stroke(); } }
+        g.strokeStyle='#eceff1'; g.lineWidth=1.5; g.beginPath(); g.moveTo(0,-6); g.lineTo(0,-16); g.stroke(); circ(g,(Math.floor(f.ph*3)%2)?'#ff5252':'#ffcdd2',0,-17,2.5); g.restore(); break;}
+      case 'shuttle':{ const fl=10+Math.sin(f.ph*30)*4; poly(g,'#ff9100',[-30,-4,-30-fl,0,-30,4]); poly(g,'#ffeb3b',[-30,-2,-30-fl*0.6,0,-30,2]);
+        box(g,'#fafafa',-30,-8,50,16,8); poly(g,'#fafafa',[20,-8,36,0,20,8]); poly(g,'#37474f',[24,-5,33,0,24,0]); poly(g,'#90a4ae',[-24,8,-6,8,-28,20]); poly(g,'#90a4ae',[-24,-8,-14,-8,-30,-16]); box(g,'#1565c0',-14,-2,22,3,1); for(let k=0;k<3;k++) circ(g,'#81d4fa',-6+k*8,-4,2); break;}
+      case 'station':{ g.save(); g.rotate(Math.sin(f.ph*0.3)*0.2); box(g,'#b0bec5',-34,-3,68,6,2); for(const sx2 of [-30,-14,10,26]){ box(g,'#1976d2',sx2,-22,10,16,1); box(g,'#1976d2',sx2,6,10,16,1); } box(g,'#eceff1',-10,-10,20,20,6); circ(g,'#4fc3f7',0,0,4); g.restore(); break;}
+      case 'astro':{ g.save(); g.rotate(Math.sin(f.ph)*0.5+f.ph*0.3); box(g,'#fafafa',-8,-2,16,18,6); box(g,'#e0e0e0',-12,0,5,12,3); box(g,'#e0e0e0',7,0,5,12,3); box(g,'#e0e0e0',-7,14,6,9,3); box(g,'#e0e0e0',1,14,6,9,3); circ(g,'#fafafa',0,-10,10); ell(g,'#263238',2,-10,7,5.5,0); ell(g,'rgba(255,255,255,.6)',0,-12,2.5,1.5,0); box(g,'#e53935',-4,3,8,4,1); g.restore(); break;}
       case 'firefly':{ const a=0.5+0.5*Math.sin(f.ph*6); g.globalAlpha=a; circ(g,'rgba(204,255,144,.35)',0,0,10); circ(g,'#ccff90',0,0,3.5); g.globalAlpha=1; break;}
       case 'owl':{const w=Math.sin(f.ph*8)*6; g.strokeStyle='#d7ccc8'; g.lineWidth=3; g.lineCap='round'; g.beginPath(); g.moveTo(-14,-w); g.quadraticCurveTo(-6,-4,0,0); g.quadraticCurveTo(6,-4,14,-w); g.stroke(); circ(g,'#fff59d',3,-2,1.6); break;}
       case 'plane':{
@@ -1411,14 +1469,19 @@ function frame(){
     else { $('hurry').style.opacity=0; lastTick=99; }
     if(taTime<=0){ taTime=0; const v=visualPos(); fail('time',{x:v.x,y:v.y}); }
   } else if(state==='play'&&started){
-    const drain=Math.min(1.15,0.22*(1+score/230))*DIFF[save.diff].m;
+    const drain=Math.min(1.15,0.22*(1+(score-baseFloor)/230))*DIFF[save.diff].m;
     gauge-=drain*dt; if(gauge<=0){gauge=0; const v=visualPos(); fail('time',{x:v.x,y:v.y});}
   }
   if(P.fall){ const f=P.fall; f.vy+=S*28*dt; f.x+=f.vx*dt; f.y+=f.vy*dt; f.rot+=f.vr*dt; f.t+=dt; if(state==='falling'&&f.t>1.15) gameOver(); }
+  if(state==='elev' && elevRide){
+    const e=elevRide; e.t+=dt; const pp=clamp(e.t/e.dur,0,1), k=pp<0.5?2*pp*pp:1-Math.pow(-2*pp+2,2)/2;
+    const f=Math.floor(e.to*k); if(f!==P.i){ P.i=f; P.to={x:wx(f),y:wy(f)}; P.from={...P.to}; P.t0=-1; score=f; updHud(); if(f%100===0&&f>0) tone(500+f/3,0.05,'triangle',0.04); }
+    if(pp>=1){ P.i=e.to; score=e.to; P.to={x:wx(e.to),y:wy(e.to)}; P.face=xs[e.to+1]-xs[e.to]; elevRide=null; state='play'; guideKey=''; updHud(); SFX.ding(); showBanner(`🛗 ${e.to}층 도착!`, e.to>=1000?'🚀 우주에 왔어요!':'띵동~ 출발!'); }
+  }
   if(state==='menu'){ // 데모: 자동으로 오르기
     demoT+=dt; if(demoT>0.32){demoT=0; demoStep();}
   }
-  if(!P.fall){ const v=visualPos(); const k=Math.min(1,dt*10); cam.x+=(v.x-cam.x)*k; cam.y+=(v.y-cam.y)*k; }
+  if(!P.fall){ const v=visualPos(); const k=state==='elev'?1:Math.min(1,dt*10); cam.x+=(v.x-cam.x)*k; cam.y+=(v.y-cam.y)*k; }
   // 그리기
   g.setTransform(DPR,0,0,DPR,0,0);
   const h=Math.max(score,P.i);
@@ -1433,7 +1496,10 @@ function frame(){
   for(let i=i1;i>=i0;i--) if(i<xs.length) drawBlock(i);
   const c=CMAP[save.sel], cs=S*1.3;
   if(P.fall){ g.save(); g.translate(sx(P.fall.x),sy(P.fall.y)-cs*0.5); g.rotate(P.fall.rot); drawChar(g,c,0,cs*0.5,cs,P.face,0.8,now); g.restore(); }
-  else { const v=visualPos(); const wk=v.p<1?Math.sin(Math.PI*v.p)*P.walk:Math.sin(now*3)*0.05; drawChar(g,c,sx(v.x),sy(v.y),cs,P.face,wk,now); }
+  else { const v=visualPos(); const wk=v.p<1?Math.sin(Math.PI*v.p)*P.walk:Math.sin(now*3)*0.05;
+    if(state==='elev') drawElevBack(sx(v.x),sy(v.y),cs);
+    drawChar(g,c,sx(v.x),sy(v.y),cs,P.face,wk,now);
+    if(state==='elev') drawElevFront(sx(v.x),sy(v.y),cs); }
   drawGuideArrow();
   drawParticles(dt);
   g.restore();
@@ -1480,12 +1546,14 @@ function updHud(){ if(hudScore!==score){$('score').textContent=score;hudScore=sc
 function showBanner(t,sub){ const b=$('banner'); b.innerHTML=t+(sub?`<small>✨ ${sub} ✨</small>`:''); b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
 let toastT=0; function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('show'),1800);}
 
-function startGame(){
+function startGame(startFloor){
   ac(); SFX.click();
   resetGame(); state='play'; show(null); dayT=0.06;
+  if(startFloor>0){ genUntil(startFloor+80); baseFloor=startFloor; taNext=startFloor+TA.step; elevRide={to:startFloor,t:0,dur:Math.min(3.2,1.6+startFloor/700)}; state='elev'; }
   $('hud').classList.remove('hide'); $('ctrl').classList.remove('hide');
   hudScore=-1; hudCoin=-1; updHud(); $('gauge').style.transform='scaleX(1)';
   $('gaugeWrap').classList.toggle('hide',isTA()); $('taBox').classList.toggle('hide',!isTA()); drawHearts();
+  if(state==='elev'){ showBanner('🛗 엘리베이터 출발!','꽉 잡아요~'); SFX.ding(); return; }
   showBanner('출발!', (isTA()?'시간 도전 · ':'')+DIFF[save.diff].name);
 }
 function gameOver(){
@@ -1619,8 +1687,13 @@ $('btnPause').addEventListener('click',pauseGame);
 $('btnResume').onclick=()=>{SFX.click(); show(null); state='play';};
 $('btnQuit').onclick=()=>{SFX.click(); toMenu();};
 document.addEventListener('visibilitychange',()=>{ if(document.hidden) pauseGame(); });
-$('btnStart').onclick=startGame;
-$('btnRetry').onclick=startGame;
+$('btnStart').onclick=()=>startGame(0);
+$('btnElev').onclick=()=>{ ac(); SFX.click(); $('elCoin').textContent=save.coins; document.querySelectorAll('.elb').forEach(b=>b.style.opacity=save.coins>=+b.dataset.c?1:0.45); $('elev').classList.remove('hide'); };
+$('elCancel').onclick=()=>{ $('elev').classList.add('hide'); startGame(0); };
+document.querySelectorAll('.elb').forEach(b=>b.onclick=()=>{ const f=+b.dataset.f, c=+b.dataset.c;
+  if(save.coins<c){ toast(`코인이 ${c-save.coins}개 부족해요`); return; }
+  save.coins-=c; persist(); $('elev').classList.add('hide'); startGame(f); });
+$('btnRetry').onclick=()=>startGame(0);
 $('btnCont').onclick=continueGame;
 $('oMenu').onclick=()=>{SFX.click();toMenu();};
 $('btnShop').onclick=()=>{ac();SFX.click();buildShop();show('shop');};
