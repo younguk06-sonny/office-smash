@@ -166,14 +166,14 @@ const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()
 /* ---------------- 캐릭터 ---------------- */
 const CHARS=[
  {name:'이화정 선생님',short:'선생님',num:'000',suit:'#5f8f6e',hair:'#3a2a22',style:'perm',acc:'#ffd23f',adult:true,skin:'#f5d2b6'},
- {name:'김승현',num:'001',suit:'#2fbf71',hair:'#7a4a22',style:'bear',acc:'#ffffff',skin:'#a86b3c'},
- {name:'장도윤',num:'006',suit:'#ff4646',hair:'#151010',style:'boy',acc:'#ffffff',skin:'#8b5a3a',runner:true},
+ {name:'김승현',num:'001',suit:'#2fbf71',hair:'#1e1612',style:'chubby',acc:'#ffffff',skin:'#f3cdaa'},
+ {name:'장도윤',num:'006',suit:'#ff4646',hair:'#151010',style:'boy',acc:'#ffffff',skin:'#d29a6c',runner:true},
  {name:'김은경',num:'008',suit:'#ff7a2e',hair:'#24150c',style:'buns',acc:'#5ad1ff'},
  {name:'류아윤',num:'011',suit:'#9b6bff',hair:'#4a2817',style:'long',acc:'#7ef0c8'},
  {name:'변예서',num:'013',suit:'#ffbf1f',hair:'#3b2114',style:'ponytail',acc:'#ff4d6d'},
- {name:'손리안',num:'014',suit:'#ff5c9d',hair:'#2a170e',style:'pigtail',acc:'#ffffff'},
+ {name:'손리안',num:'014',suit:'#ff5c9d',hair:'#2a170e',style:'long',acc:'#ffffff',pin:'#ff8fc0'},
  {name:'이세아',num:'015',suit:'#38a8ff',hair:'#16131c',style:'bob',acc:'#ffd23f'},
- {name:'이하윤',num:'018',suit:'#2f5fd0',hair:'#1a1410',style:'neat',acc:'#ffffff',glasses:true},
+ {name:'이하윤',num:'018',suit:'#2c3e75',hair:'#1a1410',style:'neat',acc:'#ffffff'},
 ];
 const nm=ci=>CHARS[ci].short||CHARS[ci].name;
 const byNum=n=>CHARS.findIndex(c=>c.num===n);
@@ -249,7 +249,7 @@ function drawGirl(g,x,y,s,c,o){
   if(c.style==='bear'){[-1,1].forEach(d=>{g.fillStyle=skin;circ(g,d*15*u,-92*u,7.5*u);g.fill();g.fillStyle='#e9a8a0';circ(g,d*15*u,-92*u,4*u);g.fill()})}
   // 목/머리
   g.fillStyle=skin;g.fillRect(-4*u,-62*u,8*u,6*u);
-  circ(g,0,-76*u,19*u);g.fill();
+  if(c.style==='chubby'){g.beginPath();g.ellipse(0,-75*u,21.5*u,19.5*u,0,0,Math.PI*2);g.fill();circ(g,-20*u,-74*u,4*u);g.fill();circ(g,20*u,-74*u,4*u);g.fill()}else{circ(g,0,-76*u,19*u);g.fill()}
   if(o.back){
     if(c.style!=='bear'){g.fillStyle=c.hair;circ(g,0,-77*u,20.5*u);g.fill()}
     if(c.style==='bob'||c.style==='neat'){rr(g,-22*u,-90*u,44*u,30*u,14*u);g.fill()}
@@ -269,10 +269,12 @@ function drawGirl(g,x,y,s,c,o){
     const ex=7*u,ey=-73*u;
     if(o.x){g.strokeStyle='#2a1a1a';g.lineWidth=2.2*u;g.lineCap='round';[-1,1].forEach(d=>{g.beginPath();g.moveTo(d*ex-3*u,ey-3*u);g.lineTo(d*ex+3*u,ey+3*u);g.moveTo(d*ex+3*u,ey-3*u);g.lineTo(d*ex-3*u,ey+3*u);g.stroke()})}
     else if(o.closed){g.strokeStyle='#2a1a1a';g.lineWidth=2*u;g.lineCap='round';[-1,1].forEach(d=>{g.beginPath();g.arc(d*ex,ey+1*u,3*u,Math.PI*1.1,Math.PI*1.9);g.stroke()})}
+    else if(c.style==='chubby'){g.strokeStyle='#2a1a1a';g.lineWidth=2.3*u;g.lineCap='round';[-1,1].forEach(d=>{g.beginPath();g.arc(d*8*u,ey+.5*u,2.6*u,Math.PI*1.15,Math.PI*1.85);g.stroke()})}
     else{g.fillStyle='#2a1a1a';[-1,1].forEach(d=>{g.beginPath();g.ellipse(d*ex,ey,2.9*u,3.8*u,0,0,Math.PI*2);g.fill()});g.fillStyle='#fff';[-1,1].forEach(d=>{circ(g,d*ex+1*u,ey-1.4*u,1.1*u);g.fill()})}
     g.fillStyle='rgba(255,110,140,.42)';circ(g,-12*u,-66.5*u,3.6*u);g.fill();circ(g,12*u,-66.5*u,3.6*u);g.fill();
     g.strokeStyle='#8a3b3b';g.fillStyle='#c94b5b';g.lineWidth=1.8*u;g.lineCap='round';
-    const m=o.mouth||'smile';
+    if(c.style==='chubby'){g.fillStyle='rgba(255,110,140,.3)';circ(g,-13.5*u,-66*u,5*u);g.fill();circ(g,13.5*u,-66*u,5*u);g.fill();g.fillStyle='#c94b5b'}
+    const m=o.mouth||(c.style==='chubby'?'grin':'smile');
     if(m==='smile'){g.beginPath();g.arc(0,-67.5*u,3.6*u,.15*Math.PI,.85*Math.PI);g.stroke()}
     else if(m==='o'){g.beginPath();g.ellipse(0,-65.5*u,2.4*u,3*u,0,0,Math.PI*2);g.fill()}
     else if(m==='grin'){g.beginPath();g.arc(0,-67*u,4.4*u,0,Math.PI);g.closePath();g.fill()}
@@ -282,6 +284,7 @@ function drawGirl(g,x,y,s,c,o){
     // 앞머리
     g.fillStyle=c.hair;g.lineJoin='round';g.beginPath();
     if(c.style==='perm'){g.arc(0,-77*u,20.6*u,Math.PI,0);g.closePath();g.fill();for(let k=0;k<7;k++){const a=Math.PI*(1.08+k*.14);circ(g,Math.cos(a)*17*u,-79*u+Math.sin(a)*15*u,6.2*u);g.fill()}}
+    else if(c.style==='chubby'){g.ellipse(0,-76*u,22*u,20.5*u,0,Math.PI,0);g.lineTo(22*u,-77*u);g.lineTo(16*u,-84*u);g.quadraticCurveTo(0,-88*u,-16*u,-84*u);g.lineTo(-22*u,-77*u);g.closePath();g.fill()}
     else if(c.style==='boy'){g.arc(0,-77*u,20.6*u,Math.PI,0);g.lineTo(20.6*u,-72*u);g.lineTo(17*u,-72*u);g.lineTo(15*u,-80*u);g.lineTo(11*u,-77*u);g.lineTo(7*u,-82*u);g.lineTo(3*u,-78*u);g.lineTo(-2*u,-83*u);g.lineTo(-6*u,-78*u);g.lineTo(-10*u,-82*u);g.lineTo(-14*u,-78*u);g.lineTo(-17*u,-72*u);g.lineTo(-20.6*u,-72*u);g.closePath();g.fill()}
     else if(c.style==='neat'){g.arc(0,-77*u,20.6*u,Math.PI,0);g.lineTo(20.6*u,-61*u);g.lineTo(16.5*u,-61*u);g.lineTo(15.5*u,-80*u);g.quadraticCurveTo(0,-84*u,-8*u,-80*u);g.quadraticCurveTo(-14*u,-79*u,-16.5*u,-74*u);g.lineTo(-16.5*u,-61*u);g.lineTo(-20.6*u,-61*u);g.closePath();g.fill()}
     else{
@@ -297,7 +300,7 @@ function drawGirl(g,x,y,s,c,o){
   if(c.style==='pigtail'){bow(g,-19*u,-80*u,4.5*u,c.acc);bow(g,19*u,-80*u,4.5*u,c.acc)}
   if(c.style==='ponytail'){g.fillStyle=c.acc;circ(g,19*u,-77*u,4*u);g.fill()}
   if(c.style==='bob'){g.strokeStyle=c.acc;g.lineWidth=3.2*u;g.beginPath();g.arc(0,-77*u,20*u,Math.PI*1.12,Math.PI*1.88);g.stroke()}
-  if(c.style==='long'){g.fillStyle=c.acc;for(let k=0;k<5;k++){circ(g,13*u+Math.cos(k*1.256)*3.2*u,-87*u+Math.sin(k*1.256)*3.2*u,2.4*u);g.fill()}g.fillStyle='#fff';circ(g,13*u,-87*u,1.6*u);g.fill()}
+  if(c.style==='long'&&c.pin){bow(g,14*u,-86*u,4.5*u,c.pin)}else if(c.style==='long'){g.fillStyle=c.acc;for(let k=0;k<5;k++){circ(g,13*u+Math.cos(k*1.256)*3.2*u,-87*u+Math.sin(k*1.256)*3.2*u,2.4*u);g.fill()}g.fillStyle='#fff';circ(g,13*u,-87*u,1.6*u);g.fill()}
   if(c.style==='buns'){bow(g,-14*u,-87*u,3.6*u,c.acc);bow(g,14*u,-87*u,3.6*u,c.acc)}
   if(c.style==='neat'){g.strokeStyle=c.acc;g.lineWidth=3*u;g.beginPath();g.arc(0,-77*u,20*u,Math.PI*1.15,Math.PI*1.85);g.stroke()}
   if(c.runner){g.fillStyle='#fff';g.fillRect(-20.5*u,-87*u,41*u,4.5*u);g.fillStyle=c.suit;g.fillRect(-20.5*u,-85.6*u,41*u,1.4*u)}
