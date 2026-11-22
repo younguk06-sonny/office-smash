@@ -21,6 +21,8 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
 /* HUD */
 #hud{position:fixed;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top) + 10px) 12px 0;pointer-events:none}
 #hudRow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#btnElevIn{pointer-events:auto;height:44px;padding:0 10px;border-radius:14px;background:rgba(0,0,0,.28);font-size:22px;opacity:.55}
+#btnElevIn.ok{opacity:1;background:linear-gradient(#f48fb1,#d81b60);animation:pulse .8s infinite alternate}
 #btnPause{pointer-events:auto;width:44px;height:44px;border-radius:14px;background:rgba(0,0,0,.28);font-size:20px;font-weight:900}
 #coinBox{background:rgba(0,0,0,.28);padding:7px 12px;border-radius:14px;font-weight:900;font-size:17px;display:flex;align-items:center;gap:6px;white-space:nowrap}
 .coin{display:inline-block;width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff59d,#ffca28 45%,#f9a825);box-shadow:inset 0 0 0 2px #f57f17;flex:none}
@@ -130,7 +132,7 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
 <div id="hud" class="hide">
   <div id="hudRow">
     <button id="btnPause" aria-label="일시정지">II</button>
-    <div id="coinBox"><span class="coin"></span><span id="hudCoin">0</span></div>
+    <div style="display:flex;gap:6px;align-items:center"><button id="btnElevIn" aria-label="엘리베이터">🛗</button><div id="coinBox"><span class="coin"></span><span id="hudCoin">0</span></div></div>
   </div>
   <div id="score">0</div>
   <div id="gaugeWrap"><div id="gauge"></div></div>
@@ -267,9 +269,9 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
   <div class="panel">
     <div style="font-size:24px;font-weight:900;letter-spacing:-.5px;white-space:nowrap">🛗 엘리베이터 타기</div>
     <div style="font-weight:800;color:#6b7896;margin-top:4px;white-space:nowrap">코인을 내고 높은 층에서 출발해요 · 내 코인 <span class="coin" style="vertical-align:-3px;width:15px;height:15px"></span> <span id="elCoin">0</span></div>
-    <button class="big b-blue elb" data-f="200" data-c="50">200층 · <span class="coin" style="vertical-align:-3px"></span> 50</button>
-    <button class="big b-org elb" data-f="500" data-c="100">500층 · <span class="coin" style="vertical-align:-3px"></span> 100</button>
-    <button class="big b-pink elb" data-f="1000" data-c="200">🚀 우주층(1000층) · <span class="coin" style="vertical-align:-3px"></span> 200</button>
+    <button class="big b-blue elb" data-k="200" data-c="50"></button>
+    <button class="big b-org elb" data-k="500" data-c="100"></button>
+    <button class="big b-pink elb" data-k="space" data-c="200"></button>
     <button class="big b-gray" id="elCancel">그냥 1층부터 할래요</button>
   </div>
 </div>
@@ -1475,7 +1477,7 @@ function frame(){
   if(P.fall){ const f=P.fall; f.vy+=S*28*dt; f.x+=f.vx*dt; f.y+=f.vy*dt; f.rot+=f.vr*dt; f.t+=dt; if(state==='falling'&&f.t>1.15) gameOver(); }
   if(state==='elev' && elevRide){
     const e=elevRide; e.t+=dt; const pp=clamp(e.t/e.dur,0,1), k=pp<0.5?2*pp*pp:1-Math.pow(-2*pp+2,2)/2;
-    const f=Math.floor(e.to*k); if(f!==P.i){ P.i=f; P.to={x:wx(f),y:wy(f)}; P.from={...P.to}; P.t0=-1; score=f; updHud(); if(f%100===0&&f>0) tone(500+f/3,0.05,'triangle',0.04); }
+    const f=Math.floor(e.from+(e.to-e.from)*k); if(f!==P.i){ P.i=f; P.to={x:wx(f),y:wy(f)}; P.from={...P.to}; P.t0=-1; score=f; updHud(); if(f%100===0&&f>0) tone(500+f/3,0.05,'triangle',0.04); }
     if(pp>=1){ P.i=e.to; score=e.to; P.to={x:wx(e.to),y:wy(e.to)}; P.face=xs[e.to+1]-xs[e.to]; elevRide=null; state='play'; guideKey=''; updHud(); SFX.ding(); showBanner(`🛗 ${e.to}층 도착!`, e.to>=1000?'🚀 우주에 왔어요!':'띵동~ 출발!'); }
   }
   if(state==='menu'){ // 데모: 자동으로 오르기
@@ -1542,14 +1544,14 @@ function drawGuideArrow(){
 /* ================= UI ================= */
 const screens=['menu','shop','rec','over','pause'];
 function show(id){ screens.forEach(s=>$(s).classList.toggle('hide',s!==id)); }
-function updHud(){ if(hudScore!==score){$('score').textContent=score;hudScore=score;} if(hudCoin!==gotCoins){$('hudCoin').textContent=gotCoins;hudCoin=gotCoins;} }
+function updHud(){ const eb=$('btnElevIn'); if(eb) eb.classList.toggle('ok',save.coins+gotCoins>=50); if(hudScore!==score){$('score').textContent=score;hudScore=score;} if(hudCoin!==gotCoins){$('hudCoin').textContent=gotCoins;hudCoin=gotCoins;} }
 function showBanner(t,sub){ const b=$('banner'); b.innerHTML=t+(sub?`<small>✨ ${sub} ✨</small>`:''); b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
 let toastT=0; function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('show'),1800);}
 
 function startGame(startFloor){
   ac(); SFX.click();
   resetGame(); state='play'; show(null); dayT=0.06;
-  if(startFloor>0){ genUntil(startFloor+80); baseFloor=startFloor; taNext=startFloor+TA.step; elevRide={to:startFloor,t:0,dur:Math.min(3.2,1.6+startFloor/700)}; state='elev'; }
+  if(startFloor>0){ genUntil(startFloor+80); baseFloor=startFloor; taNext=startFloor+TA.step; elevRide={from:0,to:startFloor,t:0,dur:Math.min(3.2,1.6+startFloor/700)}; state='elev'; }
   $('hud').classList.remove('hide'); $('ctrl').classList.remove('hide');
   hudScore=-1; hudCoin=-1; updHud(); $('gauge').style.transform='scaleX(1)';
   $('gaugeWrap').classList.toggle('hide',isTA()); $('taBox').classList.toggle('hide',!isTA()); drawHearts();
@@ -1688,11 +1690,35 @@ $('btnResume').onclick=()=>{SFX.click(); show(null); state='play';};
 $('btnQuit').onclick=()=>{SFX.click(); toMenu();};
 document.addEventListener('visibilitychange',()=>{ if(document.hidden) pauseGame(); });
 $('btnStart').onclick=()=>startGame(0);
-$('btnElev').onclick=()=>{ ac(); SFX.click(); $('elCoin').textContent=save.coins; document.querySelectorAll('.elb').forEach(b=>b.style.opacity=save.coins>=+b.dataset.c?1:0.45); $('elev').classList.remove('hide'); };
-$('elCancel').onclick=()=>{ $('elev').classList.add('hide'); startGame(0); };
-document.querySelectorAll('.elb').forEach(b=>b.onclick=()=>{ const f=+b.dataset.f, c=+b.dataset.c;
-  if(save.coins<c){ toast(`코인이 ${c-save.coins}개 부족해요`); return; }
-  save.coins-=c; persist(); $('elev').classList.add('hide'); startGame(f); });
+let elevInGame=false;
+const coinPool=()=>save.coins+(elevInGame?gotCoins:0);
+function elevTarget(k){ const cur=elevInGame?score:0; if(k==='space') return cur<1000?1000:cur+1000; return cur+(+k); }
+function openElev(inGame){
+  elevInGame=inGame; ac(); SFX.click();
+  if(inGame){ state='pause'; }
+  $('elCoin').textContent=coinPool();
+  document.querySelectorAll('.elb').forEach(b=>{ const k=b.dataset.k, c=+b.dataset.c, t=elevTarget(k);
+    const lab=k==='space'?(t===1000?'🚀 우주층(1000층)':`🚀 +1000층 (${t}층)`):(inGame?`+${k}층 (${t}층)`:`${t}층`);
+    b.innerHTML=`${lab} · <span class="coin" style="vertical-align:-3px"></span> ${c}`; b.style.opacity=coinPool()>=c?1:0.45; });
+  $('elCancel').textContent=inGame?'▶ 그냥 계속할래요':'그냥 1층부터 할래요';
+  $('elev').classList.remove('hide');
+}
+$('btnElev').onclick=()=>openElev(false);
+$('btnElevIn').onclick=()=>{ if(state==='play') openElev(true); };
+$('elCancel').onclick=()=>{ $('elev').classList.add('hide'); SFX.click(); if(elevInGame){ state='play'; } else startGame(0); };
+document.querySelectorAll('.elb').forEach(b=>b.onclick=()=>{
+  const c=+b.dataset.c, t=elevTarget(b.dataset.k);
+  if(coinPool()<c){ toast(`코인이 ${c-coinPool()}개 부족해요`); return; }
+  $('elev').classList.add('hide');
+  if(!elevInGame){ save.coins-=c; persist(); startGame(t); return; }
+  let rem=c; const g1=Math.min(gotCoins,rem); gotCoins-=g1; rem-=g1; save.coins-=rem; persist();
+  rideElevator(score,t);
+});
+function rideElevator(from,to){
+  genUntil(to+80); baseFloor+=to-from; if(isTA()) taNext=Math.ceil((to+1)/TA.step)*TA.step;
+  elevRide={from,to,t:0,dur:Math.min(3.2,1.4+(to-from)/700)}; state='elev'; gauge=1; stunT=0; started=false;
+  updHud(); showBanner('🛗 엘리베이터 출발!','꽉 잡아요~'); SFX.ding();
+}
 $('btnRetry').onclick=()=>startGame(0);
 $('btnCont').onclick=continueGame;
 $('oMenu').onclick=()=>{SFX.click();toMenu();};
