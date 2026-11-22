@@ -355,6 +355,14 @@ const Bgm={iv:null,next:0,step:0,dur:.25,fn:null,
   start(fn,dur){this.stop();this.fn=fn;this.dur=dur;this.step=0;this.next=0;this.iv=setInterval(()=>this.tick(),25)},
   tick(){const a=ac();if(!a)return;if(this.next<a.currentTime-.2)this.next=a.currentTime+.05;while(this.next<a.currentTime+.12){try{this.fn(this.step,Math.max(0,this.next-a.currentTime))}catch(e){}this.next+=this.dur;this.step++}},
   stop(){clearInterval(this.iv);this.iv=null}};
+/* 한국어 음성(기기 내장 TTS, 인터넷 없이 동작) */
+const TTS={ok:'speechSynthesis' in window,voice:null,broken:false,
+  load(){if(!this.ok)return;try{const vs=speechSynthesis.getVoices();this.voice=vs.find(v=>/^ko/i.test(v.lang))||null;this.hasList=vs.length>0}catch(e){}},
+  usable(){return this.ok&&S.sound&&!this.broken&&(this.voice||!this.hasList)},
+  cancel(){try{this.ok&&speechSynthesis.cancel()}catch(e){}},
+  say(text,rate,pitch,onstart,onend){const u=new SpeechSynthesisUtterance(text);u.lang='ko-KR';if(this.voice)u.voice=this.voice;u.rate=clamp(rate,.5,3);u.pitch=pitch||1;u.volume=1;
+    u.onstart=onstart||null;u.onend=onend||null;u.onerror=e=>{if(e&&e.error!=='interrupted'&&e.error!=='canceled')this.broken=true;onend&&onend()};speechSynthesis.speak(u);return u}};
+TTS.load();if(TTS.ok){try{speechSynthesis.onvoiceschanged=()=>TTS.load()}catch(e){}}
 const SFX={
   tap:()=>tone(880,.06,'square',.04),
   ok:()=>{tone(660,.08,'square',.05);tone(990,.12,'square',.05,.08)},
@@ -411,7 +419,7 @@ $('#bAgain').onclick=()=>{SFX.ok();startGame(S.game)};
 $('#bOther').onclick=()=>{SFX.tap();goGameSel()};
 $('#bQuit').onclick=()=>{if(cur&&cur.cleanup)cur.cleanup();cur=null;hideBanner();goGameSel()};
 const sndBtn=$('#bSnd');sndBtn.textContent=S.sound?'🔊':'🔇';
-sndBtn.onclick=()=>{S.sound=!S.sound;sndBtn.textContent=S.sound?'🔊':'🔇';saveSettings();if(S.sound)SFX.tap()};
+sndBtn.onclick=()=>{S.sound=!S.sound;if(!S.sound)TTS.cancel();sndBtn.textContent=S.sound?'🔊':'🔇';saveSettings();if(S.sound)SFX.tap()};
 
 /* ---------------- 공통 플레이 ---------------- */
 const cv=$('#cv'),ctx=cv.getContext('2d');let W=300,H=500,DPR=1;
@@ -469,15 +477,15 @@ function G1(){
   b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('pointerleave',off);
   this.key=e=>{if(e.code==='Space'){if(e.type==='keydown'&&!e.repeat)on(e);if(e.type==='keyup')off(e)}};
   addEventListener('keydown',this.key);addEventListener('keyup',this.key);
-  this.cleanup=()=>{removeEventListener('keydown',this.key);removeEventListener('keyup',this.key);Bgm.stop()};
+  this.cleanup=()=>{removeEventListener('keydown',this.key);removeEventListener('keyup',this.key);Bgm.stop();TTS.cancel()};
   const self=this;
   Bgm.start((st,w)=>{if(cur!==self||self.done){Bgm.stop();return}const ph=self.phase,s8=st%8,bar=Math.floor(st/8)%4;
     if(ph==='chant'||ph==='back'){const roots=[48,45,41,43];
       if(s8===0||s8===4)tone(MN(roots[bar]),.22,'triangle',.08,w);
       if(s8===0)kick(w,.18);if(s8===4)kick(w,.12);
       if(s8%2===1)hat(w,.035);
-      if(s8===2||s8===6)tone(MN(roots[bar]+19),.09,'square',.022,w);
-      if(s8===3||s8===7)tone(MN(roots[bar]+24),.07,'square',.016,w);
+      if(!self.tts&&(s8===2||s8===6))tone(MN(roots[bar]+19),.09,'square',.022,w);
+      if(!self.tts&&(s8===3||s8===7))tone(MN(roots[bar]+24),.07,'square',.016,w);
     }else if(ph==='turn'||ph==='watch'){
       if(s8===0||s8===4)tone(70,.16,'sine',.3,w,42);if(s8===1||s8===5)tone(62,.12,'sine',.2,w,38);
       if(s8===0)tone(MN(37),.5,'sawtooth',.025,w);
@@ -492,6 +500,12 @@ G1.prototype.newChant=function(){
   if(r<.3){for(let i=6;i<10;i++)w[i]*=.35}else if(r<.5){for(let i=0;i<4;i++)w[i]*=1.8}else if(r<.62){w[4]*=3.5}
   const sum=w.reduce((a,b)=>a+b,0);let acc=0;this.sylT=w.map(x=>{const t=acc;acc+=x/sum*dur;return t});
   this.dur=dur;this.ct=0;this.sylIdx=-1;this.watchDur=rand(D.watch[0],D.watch[1]);
+  // 음성으로 외치기: 빠르기를 매번 다르게, 가끔은 앞은 느리게·뒤는 확 빠르게
+  this.tts=TTS.usable();this.ttsDone=false;this.ttsStarted=false;this.ttsWait=0;
+  if(this.tts){TTS.cancel();const g=this;const pitch=rand(.95,1.25);const st=()=>{g.ttsStarted=true};const done=()=>{g.ttsDone=true};
+    if(r<.3){const d1=Math.max(.5,this.sylT[5]),d2=Math.max(.35,dur-d1);TTS.say('무궁화 꽃이',1.05/d1,pitch,st,null);TTS.say('피었습니다',1.0/d2,pitch,null,done)}
+    else if(r<.5){const d1=Math.max(.5,this.sylT[5]),d2=Math.max(.4,dur-d1);TTS.say('무궁화 꽃이',1.05/d1,pitch,st,null);TTS.say('피었습니다',1.0/d2,pitch,null,done)}
+    else TTS.say('무궁화 꽃이 피었습니다',2.0/dur,pitch,st,done)}
   this.R.forEach(r=>{if(r.ci===S.player)return;r.startAt=rand(.05,.45);
     if(Math.random()<D.err){r.stopAt=dur+D.grace+rand(.1,.4)}else{r.stopAt=dur-rand(.1,.75)}
     r.pauseAt=Math.random()<.25?rand(.3,dur*.7):-1;r.pauseLen=rand(.3,.9)});
@@ -511,10 +525,15 @@ G1.prototype.update=function(dt){
   const left=Math.max(0,this.D.lim-this.T);hudR.textContent='⏱ '+Math.ceil(left)+'초';hudR.style.color=left<10?'#ff6b8a':'#fff';
   const alive=this.R.filter(r=>!r.out&&!r.fin);hudL.textContent=`남은 친구 ${alive.length}명`;
   let since=0;
-  if(this.phase==='chant'){this.ct+=dt;
-    const idx=this.sylT.filter(t=>t<=this.ct).length-1;
-    if(idx!==this.sylIdx){this.sylIdx=idx;const notes=[67,67,64,67,69,67,64,62,64,60];const nx=idx+1<this.sylT.length?this.sylT[idx+1]:this.dur;voice(MN(notes[idx]||67),clamp(nx-this.sylT[idx],.12,.6)*.95,0,.08)}
-    if(this.ct>=this.dur){this.phase='turn';this.since=0;SFX.turn()}
+  if(this.phase==='chant'){
+    if(this.tts&&!this.ttsStarted&&!this.ttsDone&&!TTS.broken){this.ttsWait+=dt;if(this.ttsWait<1.2)return}
+    this.ct+=dt;
+    let idx=this.sylT.filter(t=>t<=this.ct).length-1;
+    const useTts=this.tts&&!TTS.broken&&(this.ttsStarted||this.ttsDone);
+    if(useTts){idx=this.ttsDone?9:Math.min(8,idx)}
+    if(idx!==this.sylIdx){this.sylIdx=idx;if(!useTts){const notes=[67,67,64,67,69,67,64,62,64,60];const nx=idx+1<this.sylT.length?this.sylT[idx+1]:this.dur;voice(MN(notes[idx]||67),clamp(nx-this.sylT[idx],.12,.6)*.95,0,.08)}}
+    const ended=useTts?(this.ttsDone||this.ct>this.dur*2.2+1):this.ct>=this.dur;
+    if(ended){if(useTts&&!this.ttsDone)TTS.cancel();this.sylIdx=9;this.phase='turn';this.since=0;SFX.turn()}
   }else if(this.phase==='turn'||this.phase==='watch'){
     this.since+=dt;since=this.since;this.robotTurn=Math.min(1,this.since/.28);
     if(this.phase==='turn'&&this.since>=.28){this.phase='watch'}
