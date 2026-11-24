@@ -73,6 +73,15 @@ h2{font-size:22px;letter-spacing:-.5px;white-space:nowrap;margin:6px 0 12px}
 .friend:active{transform:translateY(3px)}
 .friend.go{background:#ff8a1f;box-shadow:0 4px 0 #b35500;animation:pulse .5s infinite alternate}
 .friend:disabled{opacity:.3;animation:none}
+.hand{display:grid;gap:10px}
+.gift{border:0;border-radius:18px;height:118px;background:#fff;color:#222;font-family:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-shadow:0 5px 0 #b9b0d6;border:4px solid #13b3a2}
+.gift.neg{border-color:#ff3d7f}.gift.wand{border-color:#9b6bff}
+.gift i{font-style:normal;font-size:42px;line-height:1}.gift b{font-size:15px;white-space:nowrap;letter-spacing:-.6px}.gift span{font-size:20px;font-weight:900;color:#0a8a7c}
+.gift.neg span{color:#e0245e}.gift.wand span{color:#7a4cd9;font-size:15px}
+.gift:active{transform:translateY(3px);box-shadow:0 2px 0 #b9b0d6}
+.tip{text-align:center;font-weight:800;font-size:15px;color:#ffd2e2;white-space:nowrap;letter-spacing:-.6px;overflow:hidden;text-overflow:ellipsis}
+.tip u{color:#7ef0c8;margin-left:6px;cursor:pointer}
+.lines{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.lines .act{height:92px;font-size:13px}.lines .act i{font-size:30px}
 .msg{text-align:center;font-weight:800;font-size:17px;color:#ffd2e2;white-space:nowrap;letter-spacing:-.5px;height:92px;display:flex;align-items:center;justify-content:center;background:#2b2347;border-radius:22px}
 #rank{width:100%;display:flex;flex-direction:column;gap:8px;margin:6px 0 16px}
 .row{display:flex;align-items:center;gap:10px;background:#2b2347;border-radius:16px;padding:6px 12px}
@@ -127,6 +136,7 @@ h2{font-size:22px;letter-spacing:-.5px;white-space:nowrap;margin:6px 0 12px}
     <div class="gcard" data-g="g1"><div class="ic" style="background:#ffd9e6">🌸</div><div><b>무궁화꽃이 피었습니다</b><span>버튼을 꾹 누르면 달려요.<br>술래봇이 돌아보면 손을 떼요!</span></div></div>
     <div class="gcard" data-g="g2"><div class="ic" style="background:#d6f5f1">🪢</div><div><b>꼬마야 꼬마야 줄넘기</b><span>줄이 발밑에 올 때 점프!<br>노래에 맞춰 동작도 해요.</span></div></div>
     <div class="gcard" data-g="g3"><div class="ic" style="background:#ffe6c9">💣</div><div><b>폭탄돌리기</b><span>폭탄을 톡톡 눌러서 친구에게!<br>시간은 아무도 몰라요.</span></div></div>
+    <div class="gcard" data-g="g4"><div class="ic" style="background:#e9dcff">🎁</div><div><b>선물입니다</b><span>카드를 열고 친구에게 선물!<br>받을까? 거절할까? 눈치 싸움!</span></div></div>
   </div>
   <div class="flexfill"></div>
   <div class="btns"><button class="btn gray" id="bBackChar">캐릭터·상대 바꾸기</button></div>
@@ -429,7 +439,7 @@ const ctrl=$('#ctrl'),hudL=$('#hudL'),hudR=$('#hudR');
 let cur=null;
 function opponents(){return [0,1,2,3,4]}
 function startGame(gid){if(cur&&cur.cleanup)cur.cleanup();S.game=gid;hideBanner();show('sPlay');hudR.style.display='none';ctrl.innerHTML='';fit();
-  cur=gid==='g1'?new G1():gid==='g2'?new G2():new G3();fit()}
+  cur=gid==='g1'?new G1():gid==='g2'?new G2():gid==='g3'?new G3():new G4();fit()}
 function endGame(list,title){ // list: [{ci,label,place}]
   const g=cur;setTimeout(()=>{if(cur!==g)return;cur=null;hideBanner();
   const me=list.find(r=>r.ci===S.player);const place=me.place;
@@ -879,6 +889,155 @@ G3.prototype.draw=function(){const g=ctx;
   if(this.flash>0){g.fillStyle=`rgba(255,240,200,${this.flash*.8})`;g.fillRect(0,0,W,H);
     if(this.lastBoom!=null){const st=this.seat(this.lastBoom);g.save();g.translate(st.x,st.y-st.s*.6);g.scale(1+(1-this.flash)*.6,1+(1-this.flash)*.6);g.font=`900 ${W*.14}px sans-serif`;g.textAlign='center';g.lineWidth=8;g.strokeStyle='#b3134b';g.strokeText('펑!',0,0);g.fillStyle='#ffd23f';g.fillText('펑!',0,0);g.restore()}}
   hudR.textContent='⏱ ?:??';
+  drawFloats(g,this.floats,1/60);
+};
+
+/* =========================================================
+   4. 선물입니다
+   ========================================================= */
+const GIFT={1:['🍬','사탕'],2:['🍪','쿠키'],3:['🍦','아이스크림'],4:['🎈','풍선'],5:['🧸','곰인형'],6:['🎂','케이크'],7:['🎨','물감세트'],8:['🎮','게임기'],9:['🚲','자전거'],10:['💎','보석'],
+ '-1':['🥦','브로콜리'],'-2':['🧅','양파'],'-3':['🦟','모기'],'-4':['🧦','냄새 양말'],'-5':['🐛','애벌레'],'-6':['📝','숙제 폭탄'],'-7':['🕷️','거미'],'-8':['💉','주사'],'-9':['💩','똥'],'-10':['👻','유령']};
+const gInfo=c=>c.w?['🪄','요술봉']:GIFT[c.v];
+const gVal=c=>c.w?'🪄':(c.v>0?'+'+c.v:String(c.v));
+function buildDeck(){const d=[];for(let v=1;v<=9;v++)for(let k=0;k<3;k++)d.push({v});d.push({v:10});
+  for(let v=1;v<=9;v++)for(let k=0;k<2;k++)d.push({v:-v});d.push({v:-10},{v:-10});for(let k=0;k<4;k++)d.push({v:0,w:true});return shuffle(d)} // 28+20+4=52장
+const LINES_G=[{t:'진짜 좋은 선물이야!',k:'good'},{t:'너 주려고 아껴뒀어~',k:'good'},{t:'받으면 후회 안 해!',k:'good'},{t:'최고의 선물이야 ✨',k:'good'}];
+const LINES_N=[{t:'선물입니다~',k:'mid'},{t:'한번 받아볼래?',k:'mid'}];
+const LINES_W=[{t:'음… 받을래?',k:'weak'},{t:'별로일 수도…',k:'weak'}];
+const MY_LINES=[{t:'진짜 좋은 선물이야!',k:'good',ic:'😍'},{t:'선물입니다~',k:'mid',ic:'🎁'},{t:'음… 받을래?',k:'weak',ic:'🤔'}];
+function G4(){
+  const D={easy:{cheat:0,hint:.55,think:[1.1,1.7]},normal:{cheat:.12,hint:.3,think:[.9,1.4]},hard:{cheat:.22,hint:.12,think:[.7,1.2]}}[S.diff];
+  this.D=D;this.done=false;this.floats=[];this.deck=buildDeck();this.say=null;
+  this.P=[S.player,...S.opp].map(ci=>({ci,hand:[],front:[],pers:ci===S.player?null:pick(['liar','honest','sly']),trust:{}}));
+  this.P.forEach(p=>p.hand.push(this.deck.pop()));
+  this.me=this.P[0];this.turn=randi(0,this.P.length-1);this.state='intro';this.timer=2;
+  hudR.style.display='block';
+  banner('선물입니다','좋은 선물일까? 나쁜 선물일까?',2000);
+  ctrl.innerHTML='<div class="msg">곧 시작해요!</div>';
+  this.cleanup=()=>{};
+}
+G4.prototype.score=function(p,final){const vals=p.front.filter(c=>!c.w).map(c=>c.v);const w=p.front.filter(c=>c.w).length;
+  if(final){vals.sort((a,b)=>a-b);for(let k=0;k<w&&k<vals.length;k++)if(vals[k]<0)vals[k]=-vals[k]}return vals.reduce((a,b)=>a+b,0)};
+G4.prototype.wands=function(p){return p.front.filter(c=>c.w).length};
+G4.prototype.cur=function(){return this.P[this.turn]};
+G4.prototype.startTurn=function(){
+  if(this.done)return;
+  let guard=0;while(this.deck.length===0&&this.cur().hand.length===0&&guard<10){this.turn=(this.turn+1)%this.P.length;guard++}
+  if(this.deck.length===0&&this.P.every(p=>p.hand.length===0)){this.finish();return}
+  const p=this.cur();
+  if(this.deck.length>0){p.hand.push(this.deck.pop());SFX.tap()}
+  else if(!this.lastRoundShown){this.lastRoundShown=true;banner('마지막 선물!','카드 더미가 다 떨어졌어요',1600)}
+  this.say=null;this.offer=null;
+  if(p===this.me){this.state='pick';this.showPick()}
+  else{this.state='aiThink';this.timer=rand(this.D.think[0],this.D.think[1]);ctrl.innerHTML=`<div class="msg">🎁 ${nm(p.ci)}이(가) 선물을 고르는 중…</div>`}
+};
+G4.prototype.giftBtn=function(c,i){const [e,n]=gInfo(c);const cls=c.w?'wand':c.v>0?'pos':'neg';return `<button class="gift ${cls}" data-i="${i}"><i>${e}</i><b>${n}</b><span>${c.w?'− → +':gVal(c)}</span></button>`};
+G4.prototype.showPick=function(){const h=this.me.hand;
+  ctrl.innerHTML=`<div class="tip">${this.deck.length?'새 카드를 열었어요! ':''}어떤 선물을 줄까?</div><div class="hand" style="grid-template-columns:repeat(${h.length},1fr)">${h.map((c,i)=>this.giftBtn(c,i)).join('')}</div>`;
+  ctrl.querySelectorAll('.gift').forEach(b=>b.onclick=()=>{SFX.tap();this.sel=+b.dataset.i;this.showTarget()})};
+G4.prototype.showTarget=function(){const c=this.me.hand[this.sel];const [e,n]=gInfo(c);
+  ctrl.innerHTML=`<div class="tip">${e} ${n} 을(를) 누구에게 줄까? <u id="g4back">다시 고르기</u></div><div class="friends">${this.P.slice(1).map(p=>`<button class="friend go" data-c="${p.ci}"><canvas></canvas>${nm(p.ci)}</button>`).join('')}</div>`;
+  ctrl.querySelectorAll('.friend').forEach(b=>{portrait(b.querySelector('canvas'),+b.dataset.c,{pose:'stand'});b.onclick=()=>{SFX.tap();this.tgt=+b.dataset.c;this.showLine()}});
+  $('#g4back').onclick=()=>{SFX.tap();this.showPick()}};
+G4.prototype.showLine=function(){
+  ctrl.innerHTML=`<div class="tip">${nm(this.tgt)}에게 뭐라고 말할까? <u id="g4back">뒤로</u></div><div class="lines">${MY_LINES.map((l,i)=>`<button class="act" data-l="${i}"><i>${l.ic}</i>${l.t}</button>`).join('')}</div>`;
+  ctrl.querySelectorAll('.act').forEach(b=>b.onclick=()=>{SFX.ok();const card=this.me.hand.splice(this.sel,1)[0];this.give(this.me,this.P.find(p=>p.ci===this.tgt),card,MY_LINES[+b.dataset.l])});
+  $('#g4back').onclick=()=>{SFX.tap();this.showTarget()}};
+G4.prototype.aiGive=function(){const p=this.cur();const others=this.P.filter(q=>q!==p);
+  const v=c=>c.w?6:c.v;let idx=0;
+  if(p.hand.length===2){idx=v(p.hand[0])<=v(p.hand[1])?0:1;if(Math.random()<.15)idx=1-idx}
+  const card=p.hand.splice(idx,1)[0];const good=v(card)>0;
+  let tgt;if(!good&&Math.random()<.6){tgt=others.slice().sort((a,b)=>this.score(b)-this.score(a))[0]}else tgt=pick(others);
+  let line;if(p.pers==='liar')line=pick(LINES_G);
+  else if(p.pers==='honest')line=good?pick(LINES_G.concat(LINES_N)):(Math.random()<this.D.hint+.3?pick(LINES_W):pick(LINES_N));
+  else line=good?pick(LINES_N.concat(LINES_W)):(Math.random()<this.D.hint?pick(LINES_W):pick(LINES_G));
+  this.give(p,tgt,card,line)};
+G4.prototype.give=function(g,t,card,line){this.offer={g,t,card,line,tt:0};this.state='fly';SFX.whoosh();this.say={who:g.ci,t:`${line.t}`};
+  ctrl.innerHTML=t===this.me?`<div class="msg">🎁 선물이 와요…</div>`:`<div class="msg">🎁 ${nm(g.ci)} → ${nm(t.ci)}</div>`};
+G4.prototype.showDecide=function(){const o=this.offer;
+  ctrl.innerHTML=`<div class="tip">${nm(o.g.ci)}: "${o.line.t}"</div><div class="hand" style="grid-template-columns:1fr 1fr"><button class="bigbtn teal" id="g4yes">🙏 감사합니다</button><button class="bigbtn" id="g4no">🙅 미안합니다</button></div>`;
+  $('#g4yes').onclick=()=>this.decide(true);$('#g4no').onclick=()=>this.decide(false)};
+G4.prototype.aiDecide=function(){const o=this.offer,q=o.t;const tr=q.trust[o.g.ci]??.5;
+  const lb=o.line.k==='good'?.05:o.line.k==='weak'?-.22:0;const good=o.card.w||o.card.v>0;const ch=good?this.D.cheat:-this.D.cheat;
+  const pr=clamp(tr+lb+ch+rand(-.15,.15),.05,.95);this.decide(Math.random()<pr)};
+G4.prototype.decide=function(acc){if(this.state!=='decide')return;const o=this.offer;o.acc=acc;o.dest=acc?o.t:o.g;this.state='reveal';o.rt=0;
+  this.say={who:o.t.ci,t:acc?'감사합니다!':'미안합니다!'};acc?SFX.ok():SFX.bad();ctrl.innerHTML=`<div class="msg">${acc?'🙏 받았어요':'🙅 거절했어요'} — 무슨 선물일까?</div>`};
+G4.prototype.update=function(dt){
+  if(this.done)return;
+  if(this.state==='intro'){this.timer-=dt;if(this.timer<=0)this.startTurn();return}
+  if(this.state==='aiThink'){this.timer-=dt;if(this.timer<=0)this.aiGive();return}
+  if(this.state==='fly'){const o=this.offer;o.tt+=dt;if(o.tt>=.55){this.state='decide';if(o.t===this.me)this.showDecide();else{this.timer=rand(this.D.think[0],this.D.think[1]+.3);ctrl.innerHTML=`<div class="msg">🤔 ${nm(o.t.ci)}이(가) 고민 중…</div>`}}return}
+  if(this.state==='decide'){if(this.offer.t!==this.me){this.timer-=dt;if(this.timer<=0)this.aiDecide()}return}
+  if(this.state==='reveal'){const o=this.offer;o.rt+=dt;
+    if(o.rt>=.45&&!o.flipped){o.flipped=true;const good=o.card.w||o.card.v>0;good?tone(880,.12,'triangle',.06):tone(200,.18,'sawtooth',.05);}
+    if(o.rt>=1.6){o.dest.front.push(o.card);const a=this.anchor(o.dest);const [e,n]=gInfo(o.card);floatText(this.floats,a.x,a.y-20,`${e} ${gVal(o.card)}`,o.card.w?'#d6b3ff':o.card.v>0?'#7ef0c8':'#ff6b8a');
+      if(o.dest===this.me){vib(30)}
+      const good=o.card.w||o.card.v>0;this.P.forEach(q=>{if(q!==o.g&&q!==this.me)q.trust[o.g.ci]=clamp((q.trust[o.g.ci]??.5)+(good?.12:-.18),.1,.9)});
+      this.offer=null;this.state='pause';this.timer=.6}
+    return}
+  if(this.state==='pause'){this.timer-=dt;if(this.timer<=0){this.say=null;this.turn=(this.turn+1)%this.P.length;this.startTurn()}}
+};
+G4.prototype.finish=function(){if(this.done)return;this.done=true;this.endDelay=1800;banner('게임 끝!','요술봉으로 − 점수를 + 로 바꿔요 🪄',1700);ctrl.innerHTML='<div class="msg">점수 계산 중…</div>';
+  const res=this.P.map(p=>({ci:p.ci,sc:this.score(p,true),w:this.wands(p)})).sort((a,b)=>b.sc-a.sc).map(r=>({ci:r.ci,score:r.sc,label:`${r.sc}점${r.w?` (🪄${r.w})`:''}`}));
+  endGame(placesFrom(res))};
+/* 화면 배치 */
+G4.prototype.seat=function(p){if(p===this.me){const s=Math.min(W*.2,H*.15);return{x:W*.13,y:H*.985,s}}
+  const opp=this.P.slice(1),n=opp.length,i=opp.indexOf(p);const s=Math.min(W/n*.62,H*.16,W*.26);return{x:W*(i+.5)/n,y:Math.max(56,H*.075)+s*1.12,s}};
+G4.prototype.anchor=function(p){if(p===this.me)return{x:W*.5,y:H*.66};const st=this.seat(p);return{x:st.x,y:st.y+34+Math.min(W*.2,74)*.75}};
+function drawGift(g,x,y,w,c,face,alpha){const h=w*1.35;g.save();g.translate(x,y);if(alpha!=null)g.globalAlpha=alpha;
+  g.fillStyle='rgba(0,0,0,.22)';rr(g,-w/2+2,-h/2+3,w,h,w*.14);g.fill();
+  if(!face){g.fillStyle='#ff3d7f';rr(g,-w/2,-h/2,w,h,w*.14);g.fill();g.fillStyle='#ffd23f';g.fillRect(-w*.08,-h/2,w*.16,h);g.fillRect(-w/2,-h*.06,w,h*.12);
+    if(w>24){bow(g,0,-h*.06,w*.16,'#ffe680');g.fillStyle='rgba(255,255,255,.9)';g.font=`900 ${w*.32}px sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillText('?',0,h*.28)}}
+  else{const good=c.w||c.v>0;g.fillStyle='#fff';rr(g,-w/2,-h/2,w,h,w*.14);g.fill();g.lineWidth=Math.max(2,w*.05);g.strokeStyle=c.w?'#9b6bff':good?'#13b3a2':'#ff3d7f';g.stroke();
+    const [e,n]=gInfo(c);g.textAlign='center';g.textBaseline='middle';g.font=`${w*.46}px sans-serif`;g.fillText(e,0,-h*.1);
+    g.fillStyle=c.w?'#7a4cd9':good?'#0a8a7c':'#e0245e';g.font=`900 ${w*.28}px sans-serif`;g.fillText(c.w?'🪄':gVal(c),0,h*.3);
+    if(w>40){g.fillStyle='#555';g.font=`800 ${w*.13}px sans-serif`;g.fillText(n,0,-h*.38)}}
+  g.textBaseline='alphabetic';g.restore()}
+function bubble(g,x,y,t,maxW){g.font=`800 ${Math.max(13,Math.min(17,W*.042))}px sans-serif`;const tw=Math.min(maxW||W*.9,g.measureText(t).width+24),h=34;let bx=clamp(x-tw/2,6,W-tw-6);
+  g.fillStyle='rgba(255,255,255,.96)';rr(g,bx,y-h,tw,h,14);g.fill();g.beginPath();g.moveTo(clamp(x,bx+14,bx+tw-14)-7,y);g.lineTo(clamp(x,bx+14,bx+tw-14)+7,y);g.lineTo(clamp(x,bx+14,bx+tw-14),y+9);g.fill();
+  g.fillStyle='#2a1a3a';g.textAlign='center';g.textBaseline='middle';g.fillText(t,bx+tw/2,y-h/2);g.textBaseline='alphabetic'}
+G4.prototype.draw=function(){const g=ctx;
+  const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#d9a066');bg.addColorStop(1,'#c58a50');g.fillStyle=bg;g.fillRect(0,0,W,H);
+  g.fillStyle='#1f6b4f';g.beginPath();g.ellipse(W/2,H*.53,W*.47,H*.2,0,0,Math.PI*2);g.fill();g.strokeStyle='#8b5a35';g.lineWidth=8;g.stroke();
+  // 카드 더미
+  const dx=W*.15,dy=H*.5,dw=Math.min(W*.13,48);
+  for(let k=Math.min(5,Math.ceil(this.deck.length/10));k>0;k--)drawGift(g,dx-k*1.5,dy-k*2,dw,null,false);
+  if(this.deck.length)drawGift(g,dx,dy,dw,null,false);
+  g.fillStyle='#fff';g.font=`900 ${Math.max(12,dw*.3)}px sans-serif`;g.textAlign='center';g.fillText(`${this.deck.length}장`,dx,dy+dw*.68+14);
+  hudL.textContent=`남은 카드 ${this.deck.length}장`;hudR.textContent=`내 점수 ${this.score(this.me)}${this.wands(this.me)?' 🪄'+this.wands(this.me):''}`;
+  const curP=this.state==='intro'?null:this.cur();
+  // 상대
+  this.P.forEach(p=>{const st=this.seat(p);const isMe=p===this.me;
+    if(p===curP&&!this.done){g.fillStyle='rgba(255,210,63,.55)';g.beginPath();g.ellipse(st.x,st.y-2,st.s*.42,st.s*.11,0,0,Math.PI*2);g.fill()}
+    const mood=this.offer&&this.offer.t===p&&this.state==='decide'?'o':'smile';
+    drawGirl(g,st.x,st.y,st.s,CHARS[p.ci],{pose:p===curP&&this.state==='pick'||p===curP&&this.state==='aiThink'?'hold':'stand',mouth:mood});
+    if(isMe)return;
+    g.font=`800 ${Math.max(11,st.s*.17)}px sans-serif`;g.textAlign='center';g.lineWidth=3;g.strokeStyle='rgba(0,0,0,.45)';
+    const lab=`${nm(p.ci)} ${this.score(p)}점${this.wands(p)?' 🪄'+this.wands(p):''}`;g.strokeText(lab,st.x,st.y+15);g.fillStyle='#fff';g.fillText(lab,st.x,st.y+15);
+    // 받은 카드 미니
+    const cw=Math.min(20,W/(this.P.length-1)*.13),list=p.front.slice(-8),span=W/(this.P.length-1)*.8;const step=Math.min(cw+2,(span-cw)/Math.max(1,list.length-1));
+    list.forEach((c,k)=>drawGift(g,st.x-(list.length-1)*step/2+k*step,st.y+34,cw,c,true));
+    if(p.front.length>8){g.fillStyle='#fff';g.font=`800 11px sans-serif`;g.fillText(`+${p.front.length-8}`,st.x+span/2,st.y+38)}
+  });
+  // 내 받은 카드
+  const me=this.me;const mx0=W*.3,mx1=W*.97,my=H*.8,mw=Math.min(36,W*.09);const list=me.front;const step=list.length>1?Math.min(mw+4,(mx1-mx0-mw)/(list.length-1)):0;
+  g.fillStyle='rgba(0,0,0,.18)';rr(g,mx0-8,my-mw*.85,mx1-mx0+10,mw*1.7,12);g.fill();
+  if(!list.length){g.fillStyle='rgba(255,255,255,.7)';g.font=`800 13px sans-serif`;g.textAlign='center';g.fillText('내가 받은 선물이 여기 모여요',(mx0+mx1)/2,my+4)}
+  list.forEach((c,k)=>drawGift(g,mx0+mw/2+k*step,my,mw,c,true));
+  g.fillStyle='#fff';g.font=`900 ${Math.max(13,W*.04)}px sans-serif`;g.textAlign='left';g.fillText(`나 ${this.score(me)}점`,mx0-4,my+mw*.85+18);
+  // 내 손패 (뒷면 표시)
+  // 선물 이동
+  const o=this.offer;
+  if(o){const a=this.anchor(o.g),b=this.anchor(o.t);const bw=Math.min(W*.2,74);
+    if(this.state==='fly'){const t=Math.min(1,o.tt/.55);drawGift(g,lerp(a.x,b.x,t),lerp(a.y,b.y,t)-Math.sin(t*Math.PI)*40,bw*(.7+.3*t),null,false)}
+    else if(this.state==='decide'){const wob=Math.sin(performance.now()/120)*2;drawGift(g,b.x+wob,b.y,bw,null,false)}
+    else if(this.state==='reveal'){const rt=o.rt;const flip=Math.min(1,rt/.45);const face=flip>.5;const sx=Math.max(.05,Math.abs(Math.cos(flip*Math.PI)));
+      const d=this.anchor(o.dest);const mv=clamp((rt-1.05)/.55,0,1);const x=lerp(b.x,d.x,mv),y=lerp(b.y,d.y,mv);
+      g.save();g.translate(x,y);g.scale(sx*(1+.25*(face&&mv<.01?Math.sin(Math.min(1,(rt-.45)/.5)*Math.PI):0)),1);drawGift(g,0,0,bw*(1-mv*.5),o.card,face);g.restore();
+      if(face&&rt<1.05){const good=o.card.w||o.card.v>0;const [e,n]=gInfo(o.card);g.font=`900 ${Math.max(15,W*.045)}px sans-serif`;g.textAlign='center';g.lineWidth=4;g.strokeStyle='rgba(20,10,30,.85)';const t2=`${n} ${o.card.w?'(요술봉!)':gVal(o.card)}`;g.strokeText(t2,b.x,b.y+bw*.95);g.fillStyle=o.card.w?'#d6b3ff':good?'#7ef0c8':'#ff8aa5';g.fillText(t2,b.x,b.y+bw*.95)}}}
+  // 말풍선
+  if(this.say){const p=this.P.find(q=>q.ci===this.say.who);const st=this.seat(p);
+    if(p===this.me)bubble(g,st.x+st.s*.3,st.y-st.s*1.2,`${this.say.t}`,W*.7);else bubble(g,st.x,this.anchor(p).y+Math.min(W*.2,74)*.7+44,this.say.t,W*.8)}
   drawFloats(g,this.floats,1/60);
 };
 
