@@ -124,6 +124,12 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
 .rtabs button.on{background:#1e88e5;color:#fff}
 #regName{width:100%;font-size:22px;font-weight:900;text-align:center;padding:12px;border-radius:14px;border:3px solid #cfd8ea;margin-top:10px;font-family:inherit;color:#24304a}
 #regName:focus{outline:none;border-color:#1e88e5}
+#mathQ{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 185px);transform:translateX(-50%);background:rgba(255,255,255,.96);color:#24304a;border-radius:22px;padding:10px 26px 12px;text-align:center;box-shadow:0 6px 0 rgba(0,0,0,.2);pointer-events:none;white-space:nowrap}
+#mqLabel{font-size:14px;font-weight:900;color:#7e57c2;letter-spacing:-.3px}
+#mqText{font-size:clamp(34px,11vw,52px);font-weight:900;letter-spacing:-1px;line-height:1.1}
+#mathCtrl{position:fixed;left:0;right:0;bottom:0;display:flex;gap:10px;justify-content:center;padding:0 12px calc(env(safe-area-inset-bottom) + 18px)}
+.mbtn{flex:1;max-width:150px;height:min(26vw,110px);border-radius:24px;color:#fff;font-size:clamp(34px,11vw,48px);font-weight:900;box-shadow:0 7px 0 rgba(0,0,0,.28);text-shadow:0 2px 0 rgba(0,0,0,.25)}
+.mbtn:active{transform:translateY(5px);box-shadow:0 2px 0 rgba(0,0,0,.28)}
 </style>
 </head>
 <body>
@@ -146,6 +152,8 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
 <div id="banner"></div>
 <div id="tip" class="hide"></div>
 
+<div id="mathQ" class="hide"><div id="mqLabel">🧮 수학 문제!</div><div id="mqText">3 + 4 = ?</div></div>
+<div id="mathCtrl" class="hide"><button class="mbtn" data-i="0" style="background:linear-gradient(#ff8a80,#e53935)"></button><button class="mbtn" data-i="1" style="background:linear-gradient(#ffe082,#ffb300)"></button><button class="mbtn" data-i="2" style="background:linear-gradient(#80d8ff,#0091ea)"></button></div>
 <div id="ctrl" class="hide">
   <button class="cbtn" id="btnTurn"><span class="ic">↖</span>왼쪽</button>
   <button class="cbtn" id="btnUp"><span class="ic">↗</span>오른쪽</button>
@@ -168,7 +176,7 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
     <div id="pvName">눕</div>
     <div style="display:flex;gap:6px;justify-content:center;margin-top:6px"><button id="btnPhoto" class="hide" style="background:#fff0f5;color:#d81b60;border-radius:12px;padding:7px 12px;font-weight:900;font-size:14px;letter-spacing:-.4px">📷 얼굴 사진 넣기</button><button id="btnPhotoDel" class="hide" style="background:#eef3ff;color:#3a4766;border-radius:12px;padding:7px 12px;font-weight:900;font-size:14px;letter-spacing:-.4px">↺ 얼굴 초기화</button></div>
     <div class="seg" id="modeSeg" style="margin-top:10px">
-      <button data-m="0">🪜 기본</button><button data-m="1">⏱ 시간 도전</button>
+      <button data-m="0">🪜 기본</button><button data-m="1">⏱ 시간 도전</button><button data-m="2">🧮 수학 오비</button>
     </div>
     <div class="seg" id="diffSeg" style="margin-top:6px">
       <button data-d="0">쉬움</button><button data-d="1">보통</button><button data-d="2">어려움</button>
@@ -198,7 +206,7 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
 <div id="rec" class="screen hide">
   <div class="panel">
     <div id="overTitle">🏆 기록</div>
-    <div class="rtabs" id="recTabs"><button data-t="me">📒 내 기록</button><button data-t="r0">🌍 랭킹 · 기본</button><button data-t="r1">🌍 랭킹 · 시간</button></div>
+    <div class="rtabs" id="recTabs"><button data-t="me">📒 내 기록</button><button data-t="r0">🌍 기본</button><button data-t="r1">🌍 시간</button></div>
     <ul id="recList"></ul>
     <button class="big b-gray" id="recBack">돌아가기</button>
   </div>
@@ -1065,9 +1073,74 @@ let particles=[], pops=[], conts=0, lastRec=null;
 const TA={start:[50,40,32], step:50, bonus:(k,d)=>Math.max(d===0?14:d===1?10:8, [34,30,25][d]-2*(k-1)), penalty:[2,3,4], stun:0.35};
 let baseFloor=0, elevRide=null;
 let taTime=0, taNext=50, taK=0, stunT=0, lives=0, hurried=false, lastTick=99;
-const useHearts=()=>!isTA()&&save.diff===0;
+const useHearts=()=>(!isTA()&&save.diff===0)||save.mode===2;
 function drawHearts(){ const h=$('hearts'); h.classList.toggle('hide',!useHearts()||state==='menu'); h.textContent='❤️'.repeat(Math.max(0,lives))+'🤍'.repeat(Math.max(0,3-lives)); }
 const isTA=()=>save.mode===1;
+const isMath=()=>save.mode===2;
+let mathGate=null, mathRight=0, mathNext=5;
+const PCOL=['#e53935','#ffb300','#0091ea'];
+function makeQuestion(){
+  const d=save.diff, R2=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+  let a,b,op,ans,text;
+  const pick=Math.random();
+  if(d===0){ if(pick<0.55){ a=R2(1,9); b=R2(1,10-a); ans=a+b; text=`${a} + ${b} = ?`; } else { a=R2(2,10); b=R2(1,a-1); ans=a-b; text=`${a} - ${b} = ?`; } }
+  else if(d===1){ if(pick<0.4){ a=R2(3,15); b=R2(2,20-a); ans=a+b; text=`${a} + ${b} = ?`; } else if(pick<0.8){ a=R2(6,20); b=R2(1,a-1); ans=a-b; text=`${a} - ${b} = ?`; } else { a=R2(1,9); ans=R2(a+1,15); text=`${a} + ? = ${ans}`; ans=ans-a; } }
+  else { if(pick<0.3){ a=R2(10,60); b=R2(5,39); ans=a+b; text=`${a} + ${b} = ?`; } else if(pick<0.6){ a=R2(20,90); b=R2(5,a-5); ans=a-b; text=`${a} - ${b} = ?`; } else { a=R2(2,9); b=R2(2,9); ans=a*b; text=`${a} × ${b} = ?`; } }
+  const set=new Set([ans]); let guard=0;
+  while(set.size<3 && guard++<50){ const off=R2(1,d===2?6:3)*(Math.random()<0.5?-1:1); const v=ans+off; if(v>=0) set.add(v); }
+  while(set.size<3) set.add(ans+set.size+1);
+  const opts=[...set].sort(()=>Math.random()-0.5);
+  return {text,opts,ans:opts.indexOf(ans)};
+}
+function openMathGate(){
+  const q=makeQuestion(); mathGate={...q,stage:'ask',t:0,pick:-1};
+  $('mqText').textContent=q.text; $('mathQ').classList.remove('hide');
+  document.querySelectorAll('.mbtn').forEach((b,i)=>b.textContent=q.opts[i]);
+  $('ctrl').classList.add('hide'); $('mathCtrl').classList.remove('hide');
+  SFX.mile(); $('mqLabel').textContent='🧮 정답 발판을 골라요!';
+}
+function closeMathGate(){ mathGate=null; $('mathQ').classList.add('hide'); $('mathCtrl').classList.add('hide'); if(state==='play') $('ctrl').classList.remove('hide'); }
+function gatePos(i){ return {x:wx(P.i)+(i-1)*S*1.6, y:wy(P.i)-SH*3.2}; }
+function answerMath(i){
+  if(!mathGate||mathGate.stage!=='ask'||state!=='play') return;
+  mathGate.pick=i; mathGate.t=0;
+  const cur=visualPos(); P.from={x:cur.x,y:cur.y}; const gp=gatePos(i); P.to=gp; P.t0=now; P.face=i===0?-1:i===2?1:P.face; P.walk=-P.walk;
+  if(i===mathGate.ans){ mathGate.stage='right'; mathRight++; gotCoins+=2; SFX.buy(); pops.push({x:gp.x,y:gp.y-S*1.5,t:0,txt:'⭕ 정답! +2'}); for(let k=0;k<3;k++) trail('star',gp.x,gp.y); updHud(); }
+  else { mathGate.stage='wrong'; tone(200,0.4,'sawtooth',0.07,0.5); pops.push({x:gp.x,y:gp.y-S*1.5,t:0,txt:'❌'}); }
+}
+function updMathGate(dt){
+  const m=mathGate; if(!m||state!=='play') return; m.t+=dt;
+  if(m.stage==='right' && m.t>0.55){
+    // 정답 발판에서 다음 계단으로
+    const ni=P.i+1; genUntil(ni+60); P.from={...P.to}; P.i=ni; P.to={x:wx(ni),y:wy(ni)}; P.t0=now; score++; P.face=xs[ni+1]>xs[ni]?1:-1;
+    showBanner('딩동댕! 정답!', `맞힌 문제 ${mathRight}개`); gauge=1; closeMathGate(); mathNext=score+10; updHud();
+  } else if(m.stage==='wrong' && m.t>0.25 && !m.dropping){
+    m.dropping=true; m.vy=-S*2; m.dy=0; shake=8;
+  }
+  if(m&&m.dropping){ m.vy+=S*25*dt; m.dy+=m.vy*dt;
+    if(m.t>1.1){ lives--; drawHearts();
+      if(lives<=0){ closeMathGate(); P.to={x:wx(P.i),y:wy(P.i)}; P.t0=-1; fail('miss',{x:wx(P.i),y:wy(P.i)}); return; }
+      P.to={x:wx(P.i),y:wy(P.i)}; P.from={...P.to}; P.t0=-1;
+      showBanner('다시 도전!', `정답은 ${m.opts[m.ans]}였어요 · 하트 ${lives}개`); closeMathGate(); setTimeout(()=>{ if(state==='play'&&isMath()) openMathGate(); },900);
+    } }
+}
+function drawMathGate(){
+  const m=mathGate; if(!m) return;
+  // 아래 용암
+  const ly=sy(wy(P.i)-SH*3.2)+SH*2.2;
+  const lg=g.createLinearGradient(0,ly-20,0,ly+SH*3); lg.addColorStop(0,'rgba(255,87,34,0)'); lg.addColorStop(0.3,'rgba(255,87,34,.55)'); lg.addColorStop(1,'rgba(213,0,0,.75)');
+  g.fillStyle=lg; g.fillRect(sx(wx(P.i))-S*3.2,ly-20,S*6.4,SH*3.2);
+  for(let i=0;i<3;i++){
+    const gp=gatePos(i); let x=sx(gp.x), y=sy(gp.y);
+    if(m.stage==='wrong'&&m.pick===i&&m.dropping){ y+=m.dy*0.9; g.globalAlpha=Math.max(0,1-m.t); }
+    const w=S*1.25, h=SH*1.1;
+    box(g,'rgba(0,0,0,.2)',x-w/2+3,y+4,w,h,6); box(g,shade(PCOL[i],-0.15),x-w/2,y,w,h,6); box(g,shade(PCOL[i],0.2),x-w/2,y,w,h*0.32,5);
+    g.fillStyle='#fff'; g.font=`900 ${Math.round(h*0.62)}px sans-serif`; g.textAlign='center'; g.textBaseline='middle'; g.strokeStyle='rgba(0,0,0,.3)'; g.lineWidth=3;
+    g.strokeText(m.opts[i],x,y+h*0.58); g.fillText(m.opts[i],x,y+h*0.58);
+    if(m.stage==='ask'){ g.globalAlpha=0.35+0.25*Math.sin(now*6+i); g.strokeStyle='#fff'; g.lineWidth=3; rr(g,x-w/2-3,y-3,w+6,h+6,8); g.stroke(); }
+    g.globalAlpha=1;
+  }
+}
 const HOP=0.085;
 function wx(i){return xs[i]*S;} function wy(i){return -i*SH;}
 function genUntil(n){
@@ -1083,7 +1156,7 @@ function resetGame(){
   genUntil(80);
   P.i=0; P.face=xs[1]-xs[0]; P.from={x:0,y:0}; P.to={x:0,y:0}; P.t0=-1; P.fall=null;
   score=0; gauge=1; started=false; gotCoins=0; particles=[]; pops=[]; conts=0; lastRec=null;
-  baseFloor=0; elevRide=null;
+  baseFloor=0; elevRide=null; mathGate=null; mathRight=0; mathNext=5; ['mathQ','mathCtrl'].forEach(id=>{const e=document.getElementById(id); if(e) e.classList.add('hide');});
   taTime=TA.start[save.diff]; taNext=TA.step; taK=0; stunT=0; lives=3; hurried=false; lastTick=99;
   cam.x=0; cam.y=0;
 }
@@ -1094,6 +1167,7 @@ function visualPos(){
 }
 function act(dir){
   if(state!=='play') return;
+  if(mathGate) return;
   if(stunT>0) return;
   P.face=dir;
   const ni=P.i+1; genUntil(ni+60);
@@ -1109,6 +1183,7 @@ function act(dir){
     if(coinAt[ni]){coinAt[ni]=false; gotCoins++; SFX.coin(); coinBurst(P.to.x,P.to.y-S*0.9); pops.push({x:P.to.x,y:P.to.y-S*1.4,t:0,txt:'+1'});}
     if(score%100===0){ SFX.mile(); const z=ZONES.find(z=>z.at===score); showBanner(`${score}계단 돌파!`, z?z.name:''); }
     updHud();
+    if(isMath() && score>=mathNext) setTimeout(()=>{ if(state==='play'&&!mathGate) openMathGate(); },150);
   } else if(isTA()){
     P.face=-P.face; const pen=TA.penalty[save.diff]; taTime-=pen; stunT=TA.stun; shake=6; started=true;
     tone(180,0.25,'square',0.06,0.6); try{navigator.vibrate&&navigator.vibrate(40);}catch(e){}
@@ -1470,8 +1545,8 @@ function frame(){
     if(taTime<5){ const sec=Math.ceil(taTime); if(sec!==lastTick){ lastTick=sec; tone(1200,0.07,'square',0.05); } $('hurry').style.opacity=0.55+0.45*Math.sin(now*12); $('hurry').style.transform=`scale(${1+0.08*Math.sin(now*12)})`; }
     else { $('hurry').style.opacity=0; lastTick=99; }
     if(taTime<=0){ taTime=0; const v=visualPos(); fail('time',{x:v.x,y:v.y}); }
-  } else if(state==='play'&&started){
-    const drain=Math.min(1.15,0.22*(1+(score-baseFloor)/230))*DIFF[save.diff].m;
+  } else if(state==='play'&&started&&!mathGate){
+    const drain=Math.min(1.15,0.22*(1+(score-baseFloor)/230))*DIFF[save.diff].m*(isMath()?0.7:1);
     gauge-=drain*dt; if(gauge<=0){gauge=0; const v=visualPos(); fail('time',{x:v.x,y:v.y});}
   }
   if(P.fall){ const f=P.fall; f.vy+=S*28*dt; f.x+=f.vx*dt; f.y+=f.vy*dt; f.rot+=f.vr*dt; f.t+=dt; if(state==='falling'&&f.t>1.15) gameOver(); }
@@ -1480,6 +1555,7 @@ function frame(){
     const f=Math.floor(e.from+(e.to-e.from)*k); if(f!==P.i){ P.i=f; P.to={x:wx(f),y:wy(f)}; P.from={...P.to}; P.t0=-1; score=f; updHud(); if(f%100===0&&f>0) tone(500+f/3,0.05,'triangle',0.04); }
     if(pp>=1){ P.i=e.to; score=e.to; P.to={x:wx(e.to),y:wy(e.to)}; P.face=xs[e.to+1]-xs[e.to]; elevRide=null; state='play'; guideKey=''; updHud(); SFX.ding(); showBanner(`🛗 ${e.to}층 도착!`, e.to>=1000?'🚀 우주에 왔어요!':'띵동~ 출발!'); }
   }
+  updMathGate(dt);
   if(state==='menu'){ // 데모: 자동으로 오르기
     demoT+=dt; if(demoT>0.32){demoT=0; demoStep();}
   }
@@ -1503,6 +1579,7 @@ function frame(){
     drawChar(g,c,sx(v.x),sy(v.y),cs,P.face,wk,now);
     if(state==='elev') drawElevFront(sx(v.x),sy(v.y),cs); }
   drawGuideArrow();
+  drawMathGate();
   drawParticles(dt);
   g.restore();
   // HUD
@@ -1525,7 +1602,7 @@ function demoStep(){
 let guideKey='';
 function updateGuide(){
   let key='';
-  if(state==='play' && score<10){ key=(xs[P.i+1]>xs[P.i])?'up':'turn'; }
+  if(state==='play' && score<10 && !mathGate){ key=(xs[P.i+1]>xs[P.i])?'up':'turn'; }
   if(key===guideKey) return; guideKey=key;
   $('btnUp').classList.toggle('hintb',key==='up'); $('btnTurn').classList.toggle('hintb',key==='turn');
   const tip=$('tip');
@@ -1534,7 +1611,7 @@ function updateGuide(){
   tip.textContent=key==='up'?'계단이 오른쪽에 있어요 👉':'👈 계단이 왼쪽에 있어요';
 }
 function drawGuideArrow(){
-  if(state!=='play'||score>=10) return;
+  if(state!=='play'||score>=10||mathGate) return;
   const i=P.i+1; if(i>=xs.length) return;
   const x=sx(wx(i)), y=sy(wy(i))-S*0.35+Math.sin(now*8)*S*0.08;
   poly(g,'#ffeb3b',[x-S*0.22,y-S*0.3,x+S*0.22,y-S*0.3,x,y]); 
@@ -1556,22 +1633,23 @@ function startGame(startFloor){
   hudScore=-1; hudCoin=-1; updHud(); $('gauge').style.transform='scaleX(1)';
   $('gaugeWrap').classList.toggle('hide',isTA()); $('taBox').classList.toggle('hide',!isTA()); drawHearts();
   if(state==='elev'){ showBanner('🛗 엘리베이터 출발!','꽉 잡아요~'); SFX.ding(); return; }
-  showBanner('출발!', (isTA()?'시간 도전 · ':'')+DIFF[save.diff].name);
+  showBanner('출발!', (isTA()?'시간 도전 · ':isMath()?'🧮 수학 오비 · ':'')+DIFF[save.diff].name);
 }
 function gameOver(){
   state='over';
   $('hud').classList.add('hide'); $('hurry').style.opacity=0;
-  lastGame={score,mode:isTA()?1:0,diff:save.diff,char:save.sel}; regDone=false; $('btnReg').style.opacity=1;
-  const bk=isTA()?'bestTA':'best';
+  lastGame={score,mode:isTA()?1:isMath()?2:0,diff:save.diff,char:save.sel}; regDone=false; $('btnReg').style.opacity=1; $('btnReg').classList.toggle('hide',isMath());
+  const bk=isTA()?'bestTA':isMath()?'bestMath':'best';
   const isNew=score>(save[bk]||0) && score>0;
   if(isNew) save[bk]=score;
   save.coins+=gotCoins; save.games++;
-  if(score>0){ const d=new Date(); lastRec={s:score,c:save.sel,d:`${d.getMonth()+1}/${d.getDate()}`,m:save.diff,ta:isTA()?1:0}; save.records.push(lastRec); save.records.sort((a,b)=>b.s-a.s); save.records=save.records.slice(0,10); }
+  if(score>0){ const d=new Date(); lastRec={s:score,c:save.sel,d:`${d.getMonth()+1}/${d.getDate()}`,m:save.diff,ta:isTA()?1:isMath()?2:0,q:mathRight}; save.records.push(lastRec); save.records.sort((a,b)=>b.s-a.s); save.records=save.records.slice(0,10); }
   // 기록으로 열리는 캐릭터
   const unlocked=[];
   CHARS.forEach(c=>{ if(c.best && Math.max(save.best,save.bestTA||0)>=c.best && !save.owned.includes(c.id)){ save.owned.push(c.id); unlocked.push(c); } });
   persist();
-  $('overTitle2').textContent=isTA()?'⏱ 시간 끝!':failType==='time'?'⏰ 시간 초과!':'앗! 떨어졌어요';
+  closeMathGate();
+  $('overTitle2').textContent=isMath()?`🧮 맞힌 문제 ${mathRight}개!`:isTA()?'⏱ 시간 끝!':failType==='time'?'⏰ 시간 초과!':'앗! 떨어졌어요';
   $('overScore').innerHTML=score+(isNew?'<span class="newb">NEW</span>':'');
   $('oBest').textContent=save[bk]; $('oCoin').textContent=gotCoins; gotCoins=0; updContBtn();
   show('over');
@@ -1590,7 +1668,7 @@ function continueGame(){
   if(lastRec){ const k=save.records.indexOf(lastRec); if(k>=0) save.records.splice(k,1); lastRec=null; }
   persist(); ac(); SFX.buy();
   P.fall=null; P.t0=-1; P.to={x:wx(P.i),y:wy(P.i)}; P.from={...P.to};
-  coinAt[P.i+1]=coinAt[P.i+1]; gauge=1; started=false; lives=3; hurried=false; drawHearts(); if(isTA()) taTime=Math.max(taTime,10); state='play'; guideKey='';
+  coinAt[P.i+1]=coinAt[P.i+1]; gauge=1; started=false; mathGate=null; if(isMath()) mathNext=score+3; lives=3; hurried=false; drawHearts(); if(isTA()) taTime=Math.max(taTime,10); state='play'; guideKey='';
   show(null); $('hud').classList.remove('hide'); $('ctrl').classList.remove('hide');
   hudScore=-1; hudCoin=-1; updHud(); $('gauge').style.transform='scaleX(1)';
   showBanner('이어하기!', score+'계단부터 다시 출발'+(isTA()?' (10초)':''));
@@ -1600,7 +1678,7 @@ function toMenu(){
   resetGame(); refreshMenu(); show('menu');
 }
 function refreshMenu(){
-  $('mBest').textContent=isTA()?(save.bestTA||0):save.best; $('mCoin').textContent=save.coins;
+  $('mBest').textContent=isTA()?(save.bestTA||0):isMath()?(save.bestMath||0):save.best; $('mCoin').textContent=save.coins;
   [...$('modeSeg').children].forEach(b=>b.classList.toggle('on',+b.dataset.m===(save.mode||0)));
   $('pvName').textContent=CMAP[save.sel].name;
   $('btnPhoto').classList.toggle('hide',!CMAP[save.sel].photo);
@@ -1677,6 +1755,7 @@ cv.addEventListener('pointerdown',e=>{ if(state!=='play') return; e.preventDefau
 addEventListener('keydown',e=>{
   if(e.repeat) return;
   const k=e.key;
+  if(state==='play'&&mathGate&&['1','2','3'].includes(k)){ answerMath(+k-1); return; }
   if(state==='play'){
     if(k==='ArrowLeft'||k==='z'||k==='Z'||k==='a'||k==='A'||k==='j'||k==='J'){e.preventDefault();act(-1);press('btnTurn');}
     else if(k==='ArrowRight'||k==='ArrowUp'||k==='x'||k==='X'||k==='d'||k==='D'||k==='k'||k==='K'||k===' '){e.preventDefault();act(1);press('btnUp');}
@@ -1686,6 +1765,7 @@ addEventListener('keydown',e=>{
 function press(id){const b=$(id);b.classList.add('down');setTimeout(()=>b.classList.remove('down'),80);}
 function pauseGame(){ if(state!=='play') return; state='pause'; show('pause'); }
 $('btnPause').addEventListener('click',pauseGame);
+document.querySelectorAll('.mbtn').forEach(b=>b.addEventListener('pointerdown',e=>{e.preventDefault(); answerMath(+b.dataset.i);}));
 $('btnResume').onclick=()=>{SFX.click(); show(null); state='play';};
 $('btnQuit').onclick=()=>{SFX.click(); toMenu();};
 document.addEventListener('visibilitychange',()=>{ if(document.hidden) pauseGame(); });
@@ -1791,7 +1871,7 @@ addEventListener('online',flushPending); setTimeout(flushPending,2000);
 $('btnReg').onclick=()=>{
   if(!lastGame||lastGame.score<1){ toast('1계단 이상 올라야 등록할 수 있어요'); return; }
   if(regDone){ toast('이번 기록은 이미 등록했어요'); return; }
-  SFX.click(); $('regInfo').textContent=`${lastGame.score}계단 · ${lastGame.mode?'시간 도전':'기본'} · ${DIFF[lastGame.diff].name}`;
+  SFX.click(); $('regInfo').textContent=`${lastGame.score}계단 · ${['기본','시간 도전','수학 오비'][lastGame.mode]} · ${DIFF[lastGame.diff].name}`;
   $('regName').value=save.lastName||''; $('reg').classList.remove('hide'); setTimeout(()=>$('regName').focus(),100);
 };
 $('regCancel').onclick=()=>{ SFX.click(); $('reg').classList.add('hide'); };
@@ -1814,7 +1894,7 @@ async function renderRec(){
   if(recTab==='me'){
     if(!save.records.length) ul.innerHTML='<li style="justify-content:center;color:#7a86a3">아직 기록이 없어요. 도전해 보세요!</li>';
     save.records.forEach((r,i)=>{ const li=document.createElement('li'); const nm=(CMAP[r.c]||CHARS[0]).name;
-      li.innerHTML=`<span class="rk">${['🥇','🥈','🥉'][i]||i+1}</span><span class="sc">${r.s}계단</span><span class="cn">${nm} · ${r.ta?'⏱':'🪜'} ${DIFF[r.m||0].name} · ${r.d}</span>`; ul.appendChild(li); });
+      li.innerHTML=`<span class="rk">${['🥇','🥈','🥉'][i]||i+1}</span><span class="sc">${r.s}계단</span><span class="cn">${nm} · ${r.ta===2?'🧮':r.ta?'⏱':'🪜'} ${DIFF[r.m||0].name} · ${r.d}</span>`; ul.appendChild(li); });
     return;
   }
   ul.innerHTML='<li style="justify-content:center;color:#7a86a3">불러오는 중...</li>';
