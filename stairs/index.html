@@ -142,6 +142,7 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
   </div>
   <div id="score">0</div>
   <div id="gaugeWrap"><div id="gauge"></div></div>
+  <div id="quizLeft" class="hide" style="text-align:center;margin-top:2px"><span style="background:#8e24aa;color:#fff;font-weight:900;font-size:15px;padding:4px 12px;border-radius:12px;white-space:nowrap">🧮 퀴즈까지 5층</span></div>
   <div id="hearts" class="hide" style="text-align:center;font-size:26px;margin-top:4px;letter-spacing:2px;white-space:nowrap">❤️❤️❤️</div>
   <div id="hurry" style="position:fixed;left:0;right:0;top:40%;text-align:center;font-size:clamp(34px,11vw,52px);font-weight:900;color:#ffeb3b;text-shadow:0 4px 0 #d84315;opacity:0;pointer-events:none;white-space:nowrap">빨리빨리!</div>
   <div id="taBox" class="hide" style="text-align:center;margin-top:4px">
@@ -1093,13 +1094,13 @@ function makeQuestion(){
   return {text,opts,ans:opts.indexOf(ans)};
 }
 function openMathGate(){
-  const q=makeQuestion(); mathGate={...q,stage:'ask',t:0,pick:-1};
+  const q=makeQuestion(); mathGate={...q,stage:'ask',t:0,pick:-1}; updHud();
   $('mqText').textContent=q.text; $('mathQ').classList.remove('hide');
   document.querySelectorAll('.mbtn').forEach((b,i)=>b.textContent=q.opts[i]);
   $('ctrl').classList.add('hide'); $('mathCtrl').classList.remove('hide');
   SFX.mile(); $('mqLabel').textContent='🧮 정답 발판을 골라요!';
 }
-function closeMathGate(){ mathGate=null; $('mathQ').classList.add('hide'); $('mathCtrl').classList.add('hide'); if(state==='play') $('ctrl').classList.remove('hide'); }
+function closeMathGate(){ mathGate=null; setTimeout(updHud,0); $('mathQ').classList.add('hide'); $('mathCtrl').classList.add('hide'); if(state==='play') $('ctrl').classList.remove('hide'); }
 function gatePos(i){ return {x:wx(P.i)+(i-1)*S*1.6, y:wy(P.i)-SH*3.2}; }
 function answerMath(i){
   if(!mathGate||mathGate.stage!=='ask'||state!=='play') return;
@@ -1489,6 +1490,8 @@ function drawBlock(i){
   const z=ZONES[zoneOf(i)]; let base=z.blk;
   const mile=i>0&&i%100===0;
   if(mile) base='#ffd600';
+  const quiz=isMath()&&(state==='play'||state==='elev')&&i===mathNext&&!mathGate;
+  if(quiz) base='#9c27b0';
   const w=S*1.0, h=SH;
   const alt=i%2?0.08:0;
   box(g,'rgba(0,0,0,.18)',x-w/2+3,y+4,w,h,4);
@@ -1497,6 +1500,15 @@ function drawBlock(i){
   box(g,shade(base,-0.4),x-w/2,y+h-3,w,3,2);
   // 로블록스 스터드
   for(const ox of [-0.25,0.25]){ box(g,shade(base,0.28),x+ox*w-w*0.14,y-h*0.2,w*0.28,h*0.26,3); box(g,shade(base,0.05),x+ox*w-w*0.14,y-h*0.02,w*0.28,h*0.08,2); }
+  if(quiz){
+    const pulse=0.5+0.5*Math.sin(now*6);
+    g.globalAlpha=0.35+0.35*pulse; g.strokeStyle='#ffeb3b'; g.lineWidth=4; rr(g,x-w/2-4,y-SH*0.35,w+8,h+SH*0.4,8); g.stroke(); g.globalAlpha=1;
+    g.fillStyle='#fff'; g.font=`900 ${Math.round(h*0.6)}px sans-serif`; g.textAlign='center'; g.textBaseline='middle'; g.fillText('?',x,y+h*0.6);
+    const by=y-S*1.25+Math.sin(now*4)*S*0.08;
+    box(g,'#7b1fa2',x-S*0.04,by+S*0.35,S*0.08,S*0.5); box(g,'rgba(0,0,0,.2)',x-S*0.5+3,by-S*0.3+3,S*1.0,S*0.62,10); box(g,'#ab47bc',x-S*0.5,by-S*0.3,S*1.0,S*0.62,10);
+    g.fillStyle='#fff'; g.font=`900 ${Math.round(S*0.26)}px sans-serif`; g.fillText('🧮 퀴즈',x,by+S*0.02);
+    for(let k=0;k<3;k++){ const a=now*2+k*2.1; star(g,'#fff59d',x+Math.cos(a)*w*0.7,y-SH*0.2+Math.sin(a)*SH*0.6,S*0.08); }
+  }
   if(mile){ g.fillStyle='#5d4037'; g.font=`900 ${Math.round(h*0.55)}px sans-serif`; g.textAlign='center'; g.textBaseline='middle'; g.fillText(i,x,y+h*0.62); }
   if(save.diff===0 && state==='play' && i>P.i && i<=P.i+7 && i>=2 && (xs[i]-xs[i-1])!==(xs[i-1]-xs[i-2])){
     const d=xs[i]-xs[i-1], a=0.6+0.4*Math.sin(now*8+i);
@@ -1621,7 +1633,7 @@ function drawGuideArrow(){
 /* ================= UI ================= */
 const screens=['menu','shop','rec','over','pause'];
 function show(id){ screens.forEach(s=>$(s).classList.toggle('hide',s!==id)); }
-function updHud(){ const eb=$('btnElevIn'); if(eb) eb.classList.toggle('ok',save.coins+gotCoins>=50); if(hudScore!==score){$('score').textContent=score;hudScore=score;} if(hudCoin!==gotCoins){$('hudCoin').textContent=gotCoins;hudCoin=gotCoins;} }
+function updHud(){ const ql=$('quizLeft'); if(ql){ const on=isMath()&&state!=='menu'&&!mathGate; ql.classList.toggle('hide',!on); if(on){ const n=mathNext-score; ql.firstElementChild.textContent=n<=0?'🧮 퀴즈!':n<=3?`🧮 곧 퀴즈! ${n}층`:`🧮 퀴즈까지 ${n}층`; ql.firstElementChild.style.background=n<=3?'#d81b60':'#8e24aa'; } } const eb=$('btnElevIn'); if(eb) eb.classList.toggle('ok',save.coins+gotCoins>=50); if(hudScore!==score){$('score').textContent=score;hudScore=score;} if(hudCoin!==gotCoins){$('hudCoin').textContent=gotCoins;hudCoin=gotCoins;} }
 function showBanner(t,sub){ const b=$('banner'); b.innerHTML=t+(sub?`<small>✨ ${sub} ✨</small>`:''); b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
 let toastT=0; function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('show'),1800);}
 
