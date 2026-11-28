@@ -695,17 +695,22 @@ G2.prototype.resize=function(){};
 /* 꼬마야 꼬마야 노래: 줄 한 바퀴 = 한 마디 */
 G2.prototype.sing=function(n){if(!n||this.done)return;const per=1/this.w,bt=per/4,tr=this.round>2?2:0;
   const syl=n.word.replace(/[^가-힣]/g,'').split('');
-  let mel;if(n.bi==null){mel=n.word.startsWith('준비')?[67,67]:[72,67,72]}
-  else mel=[[67,64,67],[67,64,67],[69,69,67],[64,62,60]][n.bi];
+  // 밝은 C장조, 위로 올라가는 멜로디 + 통통 튀는(점8분) 리듬
+  let mel;if(n.bi==null){mel=n.word.startsWith('준비')?[67,72]:[72,76,79]}
+  else mel=[[72,74,76],[76,77,79],[81,79,76],[77,74,72]][n.bi];
   const bye=n.words&&n.words[2]==='잘';
-  if(bye&&n.bi===3)mel=[62,60];
-  const k=syl.length||1;const d=per*.92/k;
-  // 멜로디: 노래 목소리 + 실로폰(한 옥타브 위)
-  syl.forEach((c,i)=>{const m=(i<mel.length-1?mel[i]:mel[mel.length-1])+tr;voice(MN(m),d*.9,i*d,.06);mallet(MN(m+12),Math.min(.6,d*1.8),i*d,.065)});
-  // 화음: C C F G (마지막 줄 끝은 C로 마무리)
-  const CHD={C:[60,64,67],F:[60,65,69],G:[59,62,65,67]};
-  const name=n.bi==null?(n.word.startsWith('준비')?'G':'C'):(bye&&n.bi===3?'C':['C','C','F','G'][n.bi]);
-  const root={C:48,F:53,G:43}[name], fifth=root+7;
+  if(bye&&n.bi===2)mel=[79];if(bye&&n.bi===3)mel=[76,74,72];
+  const k=syl.length||1;
+  const RH={1:[[0,1.6]],2:[[0,.7],[1,1.1]],3:[[0,.6],[.75,.25],[1,1.1]]};
+  const rh=RH[k]||syl.map((c,i)=>[i*.5,.45]);
+  syl.forEach((c,i)=>{const m=(i<mel.length?mel[i]:mel[mel.length-1])+tr;const [st,du]=rh[i];voice(MN(m),du*bt*.95,st*bt,.07);mallet(MN(m+12),Math.min(.5,du*bt*1.4),st*bt,.05)});
+  // 화음: C Am F G (마지막 줄 끝은 C로 마무리)
+  const CHD={C:[60,64,67],Am:[57,60,64],F:[60,65,69],G:[59,62,65,67]};
+  const name=n.bi==null?(n.word.startsWith('준비')?'G':'C'):(bye&&n.bi===3?'C':['C','Am','F','G'][n.bi]);
+  // 대답하는 실로폰 꾸밈(3·4박): 화음을 위로 톡톡
+  const ARP={C:[72,76,79,84],Am:[69,72,76,81],F:[72,77,81,84],G:[71,74,79,83]}[name];
+  if(!(bye&&n.bi===3))ARP.forEach((m,i)=>mallet(MN(m+tr),.22,(2+i*.5)*bt,.035));
+  const root={C:48,Am:45,F:53,G:43}[name], fifth=root+7;
   // 피아노 '쿵짝' 반주: 2·4박에 화음
   [1,3].forEach(q=>CHD[name].forEach(m=>pluck(MN(m+tr),bt*.9,q*bt,.03)));
   // 통통 베이스: 1박 근음, 3박 5음, 4박 뒤 꾸밈음
