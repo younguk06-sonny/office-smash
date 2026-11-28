@@ -1763,7 +1763,17 @@ function showRec(){ recTab='me'; renderRec(); show('rec'); }
 function bindBtn(el,fn){ el.addEventListener('pointerdown',e=>{e.preventDefault();el.classList.add('down');fn();}); ['pointerup','pointerleave','pointercancel'].forEach(t=>el.addEventListener(t,()=>el.classList.remove('down'))); }
 bindBtn($('btnTurn'),()=>act(-1));
 bindBtn($('btnUp'),()=>act(1));
-cv.addEventListener('pointerdown',e=>{ if(state!=='play') return; e.preventDefault(); act(e.clientX<W/2?-1:1); });
+function hitMathPlatform(px,py){
+  if(!mathGate||mathGate.stage!=='ask') return -1;
+  const w=S*1.25, h=SH*1.1; let best=-1, bd=1e9;
+  for(let i=0;i<3;i++){ const gp=gatePos(i), x=sx(gp.x), y=sy(gp.y);
+    // 발판 + 주변 여유(손가락 크기)까지 인정
+    if(px>x-w/2-S*0.25 && px<x+w/2+S*0.25 && py>y-SH*1.2 && py<y+h+SH*0.8){ const d=Math.abs(px-x); if(d<bd){bd=d;best=i;} } }
+  return best;
+}
+cv.addEventListener('pointerdown',e=>{ if(state!=='play') return; e.preventDefault();
+  if(mathGate){ const r=cv.getBoundingClientRect(), i=hitMathPlatform(e.clientX-r.left,e.clientY-r.top); if(i>=0) answerMath(i); return; }
+  act(e.clientX<W/2?-1:1); });
 addEventListener('keydown',e=>{
   if(e.repeat) return;
   const k=e.key;
