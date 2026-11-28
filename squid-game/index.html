@@ -356,6 +356,17 @@ function noise(d=.5,v=.35,lp=900,when=0){const a=ac();if(!a)return;const t=a.cur
 const MN=n=>440*Math.pow(2,(n-69)/12);
 function hat(when=0,v=.04){const a=ac();if(!a)return;const t=a.currentTime+when;const len=Math.floor(a.sampleRate*.04);const b=a.createBuffer(1,len,a.sampleRate);const ch=b.getChannelData(0);for(let i=0;i<len;i++)ch[i]=(Math.random()*2-1)*(1-i/len);const s=a.createBufferSource();s.buffer=b;const f=a.createBiquadFilter();f.type='highpass';f.frequency.value=7000;const gn=a.createGain();gn.gain.value=v;s.connect(f).connect(gn).connect(a.destination);s.start(t)}
 function kick(when=0,v=.28){tone(120,.16,'sine',v,when,45)}
+/* 실로폰 */
+function mallet(f,d,when=0,v=.07){const a=ac();if(!a)return;const t=a.currentTime+when;[[1,v,1],[4,v*.22,.35],[9.9,v*.06,.15]].forEach(([m,vv,dd])=>{const o=a.createOscillator(),g=a.createGain();o.type='sine';o.frequency.value=f*m;g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vv,t+.004);g.gain.exponentialRampToValueAtTime(.0001,t+Math.max(.05,d*dd));o.connect(g).connect(a.destination);o.start(t);o.stop(t+d+.05)})}
+/* 피아노·베이스 퉁김 */
+function pluck(f,d,when=0,v=.04,bass){const a=ac();if(!a)return;const t=a.currentTime+when;const o=a.createOscillator(),o2=a.createOscillator(),g=a.createGain(),fl=a.createBiquadFilter();
+  o.type=bass?'triangle':'triangle';o2.type=bass?'sine':'square';o.frequency.value=f;o2.frequency.value=bass?f:f*1.003;fl.type='lowpass';fl.frequency.setValueAtTime(bass?900:2600,t);fl.frequency.exponentialRampToValueAtTime(bass?300:900,t+d);
+  const g2=a.createGain();g2.gain.value=bass?.6:.12;g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(v,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+Math.max(.06,d));
+  o.connect(fl);o2.connect(g2).connect(fl);fl.connect(g).connect(a.destination);[o,o2].forEach(x=>{x.start(t);x.stop(t+d+.05)})}
+/* 손뼉 */
+function clap(when=0,v=.11){const a=ac();if(!a)return;const t=a.currentTime+when;const len=Math.floor(a.sampleRate*.16);const b=a.createBuffer(1,len,a.sampleRate);const ch=b.getChannelData(0);const sr=a.sampleRate;
+  for(let i=0;i<len;i++){const tt=i/sr;const env=(tt<.01?1:tt<.02?.8:tt<.03?.7:0)+Math.exp(-(tt-.03)*30)*(tt>=.03?.6:0);ch[i]=(Math.random()*2-1)*env}
+  const s=a.createBufferSource();s.buffer=b;const f=a.createBiquadFilter();f.type='bandpass';f.frequency.value=1400;f.Q.value=.9;const g=a.createGain();g.gain.value=v;s.connect(f).connect(g).connect(a.destination);s.start(t)}
 /* 노래하는 목소리 느낌(비브라토) */
 function voice(f,d,when=0,v=.075){const a=ac();if(!a)return;const t=a.currentTime+when;const o=a.createOscillator(),o2=a.createOscillator(),l=a.createOscillator(),lg=a.createGain(),g=a.createGain(),g2=a.createGain();
   o.type='triangle';o2.type='sine';o.frequency.value=f;o2.frequency.value=f*2;l.frequency.value=5.5;lg.gain.value=f*.012;l.connect(lg);lg.connect(o.frequency);lg.connect(o2.frequency);g2.gain.value=.3;
@@ -682,15 +693,28 @@ G2.prototype.action=function(a){if(this.done)return;ac();const me=this.me;if(me.
 };
 G2.prototype.resize=function(){};
 /* 꼬마야 꼬마야 노래: 줄 한 바퀴 = 한 마디 */
-G2.prototype.sing=function(n){if(!n||this.done)return;const per=1/this.w;
+G2.prototype.sing=function(n){if(!n||this.done)return;const per=1/this.w,bt=per/4,tr=this.round>2?2:0;
   const syl=n.word.replace(/[^가-힣]/g,'').split('');
   let mel;if(n.bi==null){mel=n.word.startsWith('준비')?[67,67]:[72,67,72]}
   else mel=[[67,64,67],[67,64,67],[69,69,67],[64,62,60]][n.bi];
-  if(n.words&&n.words[0]==='꼬마야'&&n.words[2]==='잘'&&n.bi===3)mel=[62,60];
+  const bye=n.words&&n.words[2]==='잘';
+  if(bye&&n.bi===3)mel=[62,60];
   const k=syl.length||1;const d=per*.92/k;
-  syl.forEach((c,i)=>{const m=i<mel.length-1?mel[i]:mel[mel.length-1];voice(MN(m+(this.round>2?2:0)),d*.9,i*d,.08)});
-  const bass=[48,48,53,55][n.bi==null?0:n.bi];tone(MN(bass-12+(this.round>2?2:0)),per*.45,'triangle',.08);
-  kick(0,.22);hat(per/2,.04);hat(per*.25,.02);hat(per*.75,.02);
+  // 멜로디: 노래 목소리 + 실로폰(한 옥타브 위)
+  syl.forEach((c,i)=>{const m=(i<mel.length-1?mel[i]:mel[mel.length-1])+tr;voice(MN(m),d*.9,i*d,.06);mallet(MN(m+12),Math.min(.6,d*1.8),i*d,.065)});
+  // 화음: C C F G (마지막 줄 끝은 C로 마무리)
+  const CHD={C:[60,64,67],F:[60,65,69],G:[59,62,65,67]};
+  const name=n.bi==null?(n.word.startsWith('준비')?'G':'C'):(bye&&n.bi===3?'C':['C','C','F','G'][n.bi]);
+  const root={C:48,F:53,G:43}[name], fifth=root+7;
+  // 피아노 '쿵짝' 반주: 2·4박에 화음
+  [1,3].forEach(q=>CHD[name].forEach(m=>pluck(MN(m+tr),bt*.9,q*bt,.03)));
+  // 통통 베이스: 1박 근음, 3박 5음, 4박 뒤 꾸밈음
+  pluck(MN(root+tr),bt*1.6,0,.11,true);pluck(MN(fifth+tr),bt*1.4,2*bt,.09,true);pluck(MN(root+12+tr),bt*.5,3.5*bt,.05,true);
+  // 드럼: 쿵(1·3) 짝(2·4 손뼉) 치치(8분)
+  kick(0,.2);kick(2*bt,.16);clap(bt,.11);clap(3*bt,.11);
+  for(let i=0;i<8;i++)hat(i*bt/2,i%2?.018:.03);
+  // 줄의 끝(잘 가거라) 마지막 마디: 반짝 마무리
+  if(bye&&n.bi===3){[72,76,79,84].forEach((m,i)=>mallet(MN(m+tr),.5,per*.55+i*bt*.35,.05));noise(.5,.05,6000,per*.5)}
 };
 G2.prototype.jx=function(ci){const j=this.J.find(x=>x.ci===ci);const n=this.J.length;return W*(.5+(j.lane-(n-1)/2)*.15)};
 G2.prototype.height=function(j){if(j.jt<0)return 0;const t=j.jt/this.D.J;return 4*t*(1-t)};
