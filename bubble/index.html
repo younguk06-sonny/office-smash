@@ -198,6 +198,7 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;white-space:
       🔤 <b>E·X·T·E·N·D</b> 글자 방울 6개를 모으면 하트 +1<br>
       ⚡ <b>번개 방울</b>: 터뜨리면 앞으로 번개가 날아가요<br>
       💧 <b>물 방울</b>: 터뜨리면 물이 쏟아져 친구들을 쓸어가요<br>
+      🦄 유니는 <b>날기</b> 버튼을 누르고 있으면 하늘을 날아요<br>
       ⏰ 시계=친구들 멈춤 · ☂️ 우산=스테이지 건너뛰기<br>
       🧪 물약=과일 비 · 👟 운동화=빨라짐 · 🍬 사탕=방울 멀리
     </div>
@@ -333,7 +334,8 @@ const CHARS=[
   {id:'dungi',name:'둥이',desc:'🐾 발이 빨라요! · 민트 방울',fur:'#d9a273',spd:7.6,jump:22.4,float:false,bub:'#5fe0b5',dog:true,face:'dungi',treat:'bone'},
   {id:'tongtong',name:'통통이',desc:'🐰 점프가 높고 둥실 떠요! · 분홍 방울',fur:'#cbbfaa',spd:6.6,jump:23.6,float:true,bub:'#ff8fc8',plush:true,face:'tongtong_king',treat:'carrot'},
   {id:'bora',name:'보라돌이',desc:'💜 방울이 크고 멀리 가요! · 보라 방울',fur:'#a678e8',spd:7.0,jump:23.0,float:false,bub:'#b57cff',bora:true,face:'bora',treat:'grape',bigBub:1.2},
-  {id:'trang',name:'트랑',desc:'🐊 방울을 빨리빨리 쏴요! · 연두 방울',fur:'#8cc63f',spd:7.2,jump:22.8,float:false,bub:'#8ee04f',trang:true,face:'trang',treat:'fishy',fastFire:0.7},
+  {id:'trang',name:'트랑이',desc:'🐊 방울을 빨리빨리 쏴요! · 연두 방울',fur:'#8cc63f',spd:7.2,jump:22.8,float:false,bub:'#8ee04f',trang:true,face:'trang',treat:'fishy',fastFire:0.7},
+  {id:'uni',name:'유니',desc:'🦄 하늘을 훨훨 날아요! · 핑크 방울',fur:'#f6b8c6',spd:7.0,jump:22.4,float:false,fly:true,bub:'#f59ae6',uni:true,face:'uni',treat:'strawberry'},
 ];
 function drawPlush(G,c,u,t,walk){
   const f=c.fur, dk=shade(f,-0.15), dirt='#a3a68f';
@@ -465,10 +467,48 @@ function drawTrang(G,c,u,t,walk){
   }
   G.restore();
 }
+/* 유니 — 분홍 유니콘 인형: 긴 목, 노란 뿔, 보라 갈기·꼬리, 감은 눈 웃음, 볼 터치, 하얀 꽃 자수, 작은 날개 */
+function drawUni(G,c,u,t,walk){
+  const pk=c.fur, pk2=shade(pk,-0.12), pur='#b7a7e3', pur2='#9886cf', ln='#4a2a2a';
+  const flying=P&&!P.onGround&&state==='play';
+  const bob=Math.abs(walk)*u*0.3+(flying?Math.sin(t*6)*u*0.2:0); G.translate(0,-bob);
+  const soft=(x,y,rx,ry,rot,col)=>{ const gr=G.createRadialGradient(x-rx*0.3,y-ry*0.35,Math.min(rx,ry)*0.1,x,y,Math.max(rx,ry)); gr.addColorStop(0,shade(col,0.22)); gr.addColorStop(1,col); G.fillStyle=gr; G.beginPath(); G.ellipse(x,y,rx,ry,rot||0,0,Math.PI*2); G.fill(); };
+  // 꼬리
+  G.save(); G.translate(-2.2*u,-3.2*u); G.rotate(0.5+Math.sin(t*4)*0.15); soft(-0.5*u,0.9*u,0.75*u,1.6*u,0.3,pur); soft(-0.2*u,0.6*u,0.4*u,1.1*u,0.2,shade(pur,0.15)); G.restore();
+  // 다리 (뭉툭한 두 다리)
+  soft(-1.0*u-walk*0.3*u,-1.0*u,0.85*u,1.15*u,0,pk2); soft(1.0*u+walk*0.3*u,-1.0*u,0.85*u,1.15*u,0,pk);
+  // 몸통
+  soft(0,-3.6*u,2.25*u,2.5*u,0,pk);
+  // 날개 (날 때 파닥파닥)
+  const fl=flying?Math.sin(t*(keys.jump?26:12))*0.55:Math.sin(t*3)*0.12;
+  G.save(); G.translate(-1.1*u,-4.9*u); G.rotate(-0.35+fl);
+  for(const [wx,wy,wr,wa] of [[-1.5,-0.55,1.15,-0.5],[-1.25,0.05,1.0,-0.2],[-0.95,0.55,0.8,0.1]]){ G.fillStyle='#fff3f7'; G.beginPath(); G.ellipse(wx*u,wy*u,wr*u,wr*0.42*u,wa,0,Math.PI*2); G.fill(); G.strokeStyle='#eaa8bf'; G.lineWidth=u*0.1; G.stroke(); }
+  G.restore();
+  // 꽃 자수
+  const flower=(x,y,r)=>{ for(let k=0;k<5;k++){ const a=k*1.2566-0.3; circ(G,'#fff',x+Math.cos(a)*r*0.6,y+Math.sin(a)*r*0.6,r*0.45); } circ(G,'#f7a6bd',x,y,r*0.3); };
+  flower(-0.9*u,-2.4*u,0.55*u); flower(0.3*u,-1.9*u,0.42*u);
+  // 몸의 바느질 곡선
+  G.strokeStyle=ln; G.lineWidth=u*0.13; G.lineCap='round'; G.beginPath(); G.arc(0.9*u,-3.4*u,0.7*u,-2.2,0.2); G.stroke();
+  // 긴 목 + 머리
+  soft(0.75*u,-6.6*u,1.35*u,2.2*u,0.15,pk);
+  soft(1.3*u,-8.7*u,2.0*u,1.55*u,0,pk);
+  soft(2.75*u,-8.2*u,1.35*u,1.2*u,0,pk);
+  circ(G,'#ef8fa6',3.35*u,-8.75*u,0.14*u);
+  // 갈기 (보라 몽글몽글)
+  for(const [mx,my,r] of [[0.3,-10.15,0.62],[-0.35,-9.55,0.68],[-0.6,-8.6,0.66],[-0.6,-7.6,0.6],[-0.4,-6.6,0.55],[-0.15,-5.7,0.5]]){ circ(G,pur,mx*u,my*u,r*u); circ(G,shade(pur,0.18),(mx-0.12)*u,(my-0.15)*u,r*0.45*u); }
+  // 귀
+  G.save(); G.translate(0.9*u,-10.05*u); G.rotate(0.15); soft(0,0,0.42*u,0.62*u,0,pk2); soft(0,0.05*u,0.2*u,0.38*u,0,'#fbd3de'); G.restore();
+  // 노란 뿔
+  G.save(); G.translate(1.95*u,-10.0*u); G.rotate(0.35);
+  poly(G,'#ffe08a',[-0.38*u,0.15*u,0.38*u,0.15*u,0,-1.35*u]); G.strokeStyle='#e7b84f'; G.lineWidth=u*0.07; G.beginPath(); G.moveTo(-0.25*u,-0.15*u); G.lineTo(0.28*u,-0.35*u); G.moveTo(-0.15*u,-0.55*u); G.lineTo(0.18*u,-0.7*u); G.stroke(); G.restore();
+  // 감은 눈 웃음 + 볼 터치
+  G.strokeStyle=ln; G.lineWidth=u*0.15; G.beginPath(); G.arc(2.0*u,-9.15*u,0.5*u,0.25,Math.PI-0.25); G.stroke();
+  for(let k=0;k<3;k++) box(G,'#f08aa5',(1.75+k*0.28)*u,-8.35*u,0.14*u,0.26*u,0.05*u);
+}
 /* 캐릭터: (x,y)=발 가운데, h=키(타일) */
 function drawChar(G,c,x,y,h,face,t,walk){
   G.save(); G.translate(x,y); G.scale(face,1); curFace=face;
-  if(c.dog) drawDog(G,c,h/9.3,t,walk); else if(c.bora) drawBora(G,c,h/11.4,t,walk); else if(c.trang) drawTrang(G,c,h/10.6,t,walk); else drawPlush(G,c,h/11.4,t,walk);
+  if(c.dog) drawDog(G,c,h/9.3,t,walk); else if(c.bora) drawBora(G,c,h/11.4,t,walk); else if(c.trang) drawTrang(G,c,h/10.6,t,walk); else if(c.uni) drawUni(G,c,h/11.2,t,walk); else drawPlush(G,c,h/11.4,t,walk);
   G.restore();
 }
 
@@ -651,9 +691,9 @@ function drawItem(G,k,x,y,s,t){
 
 /* ================= 난이도 ================= */
 const DIFF=[
-  {name:'쉬움',hearts:5,eSpd:0.5,trap:22,life:16,range:7.5,rad:1.2,cool:0.24,bspd:17,hurry:0,proj:0,cnt:0.6,inv:3,boss:8,jumpP:0.12,cap:1.25,desc:'1학년도 OK! 하트 5개 · 느린 친구들 · 넉넉한 방울'},
-  {name:'보통',hearts:3,eSpd:0.82,trap:10,life:11,range:6.2,rad:1.05,cool:0.3,bspd:19,hurry:60,proj:0.5,cnt:1,inv:2.5,boss:16,jumpP:0.35,cap:1.05,desc:'하트 3개 · 오래 걸리면 먹구름이 와요'},
-  {name:'어려움',hearts:3,eSpd:1.1,trap:6.5,life:8,range:5.2,rad:1.0,cool:0.34,bspd:20,hurry:42,proj:1,cnt:1.25,inv:2,boss:26,jumpP:0.6,cap:1.0,desc:'빠르고 화난 친구들 · 생선 뼈 조심!'},
+  {name:'쉬움',hearts:5,eSpd:0.5,trap:22,life:16,range:7.5,rad:1.2,cool:0.24,bspd:17,hurry:80,cloudD:20,proj:0,cnt:0.6,inv:3,boss:8,jumpP:0.12,cap:1.25,desc:'1학년도 OK! 하트 5개 · 느린 친구들 · 넉넉한 방울'},
+  {name:'보통',hearts:3,eSpd:0.82,trap:10,life:11,range:6.2,rad:1.05,cool:0.3,bspd:19,hurry:50,cloudD:10,proj:0.5,cnt:1,inv:2.5,boss:16,jumpP:0.35,cap:1.05,desc:'하트 3개 · 50초 지나면 서둘러요! 먹구름 등장'},
+  {name:'어려움',hearts:3,eSpd:1.1,trap:6.5,life:8,range:5.2,rad:1.0,cool:0.34,bspd:20,hurry:38,cloudD:8,proj:1,cnt:1.25,inv:2,boss:26,jumpP:0.6,cap:1.0,desc:'빠르고 화난 친구들 · 생선 뼈 조심!'},
 ];
 
 /* ================= 스테이지 ================= */
@@ -900,7 +940,7 @@ function lvlOf(st){ return LEVELS[(st-1)%LEVELS.length]; }
 function loadLevel(st){
   gs.stage=st; gs.loop=Math.floor((st-1)/LEVELS.length); LV=lvlOf(st);
   grid=buildGrid(LV); foes=[]; bubbles=[]; dead=[]; proj=[]; items=[];
-  hurried=false; cloudSent=false; gs.stageT=0; gs.extT=gs.diff===0?rand(25,35):rand(35,50); gs.spT=3; gs.bonusDone=false; gs.freeze=0; fx=[];
+  hurried=false; cloudSent=false; gs.stageT=0; gs.hurryWarn=false; gs.extT=gs.diff===0?rand(25,35):rand(35,50); gs.spT=3; gs.bonusDone=false; gs.freeze=0; fx=[];
   let list=LV.f.slice(); if(!LV.boss){ const n=Math.max(2,Math.round(list.length*D.cnt)); if(n<list.length) list=list.slice(0,n); else while(list.length<n){ const b=list[list.length%LV.f.length]; list.push([b[0],clamp(b[1]+rand(-3,3),4,27),b[2]]); } }
   list.forEach(([type,cx,fr,vr],i)=>{
     const f={type,w:1.7,h:1.7,dir:cx<16?1:-1,vx:0,vy:0,onGround:false,angry:false,walk:0,jumpT:rand(1,3),throwT:rand(2,5),spawn:0.6+i*0.15,edge:0,t:Math.random()*5};
@@ -911,7 +951,7 @@ function loadLevel(st){
   });
   renderTiles(tileCv,grid,theme()); buildBg(); updHud();
 }
-function foeSpeed(f){ const base={wind:3.4,cat:3.0,ghost:2.6,boss:f.cat?3.1:2.6,cloud:2.4,spring:3.6}[f.type]; return base*D.eSpd*(1+0.18*gs.loop)*(1+(gs.diff===0?0.0025:0.004)*((gs.stage-1)%LASTST))*(f.angry?1.55:1); }
+function foeSpeed(f){ const base={wind:3.4,cat:3.0,ghost:2.6,boss:f.cat?3.1:2.6,cloud:2.4+(f.type==='cloud'?Math.min(2,f.t*0.04):0),spring:3.6}[f.type]; return base*D.eSpd*(1+0.18*gs.loop)*(1+(gs.diff===0?0.0025:0.004)*((gs.stage-1)%LASTST))*(f.angry?1.55:1); }
 
 /* ================= 물리 ================= */
 const GRAV=55, FALLMAX=13;
@@ -934,11 +974,20 @@ function updPlayer(dt){
   P.vx=mv*spd; if(mv) P.face=mv;
   P.x=clamp(P.x+P.vx*dt,2,30-P.w);
   if(P.y+P.h<1.05) P.x=clamp(P.x,GAP0,GAP1-P.w);
+  if(C.fly){
+    // 유니: 점프 버튼을 누르고 있으면 위로 훨훨, 떼면 사뿐사뿐 내려와요
+    if(keys.jump){ if(P.onGround){ P.onGround=false; P.vy=-3; } P.vy=Math.max(P.vy-48*dt,-8.5); P.flapT=(P.flapT||0)-dt; if(P.flapT<=0){ P.flapT=0.28; tone(520,0.07,'sine',0.025,1.6); } }
+    else if(!P.onGround) P.vy=Math.min(P.vy+18*dt,4.2);
+    jumpEdge=false;
+    moveVert(P,dt);
+    if(P.y<1.0){ P.y=1.0; if(P.vy<0) P.vy=0; }
+  } else {
   if(P.onGround && (jumpEdge || keys.jump)){ P.vy=-C.jump; P.onGround=false; SFX.jump(); }
   jumpEdge=false;
   let gg=GRAV, mx=FALLMAX; if(C.float && keys.jump && P.vy>0){ gg*=0.4; mx=5.5; }
   if(!P.onGround) P.vy=Math.min(P.vy+gg*dt,mx);
   moveVert(P,dt);
+  }
   P.walk=(P.onGround&&mv)?P.walk+dt*spd*1.6:P.walk*0.8;
   P.cool-=dt; P.shootA=Math.max(0,P.shootA-dt);
   if((fireEdge||keys.fire)&&P.cool<=0){ shoot(); P.cool=D.cool*(P.candy?0.7:1)*(CHARS[gs.char].fastFire||1); }
@@ -1256,6 +1305,7 @@ function toast(m){ const el=$('toast'); el.textContent=m; el.classList.add('show
 function startGame(fromStage){
   ac(); D=DIFF[save.diff]; gs.diff=save.diff; gs.char=save.char; gs.score=0; gs.hearts=D.hearts; gs.continues=0; gs.nextLife=30000; gs.ext=[0,0,0,0,0,0]; hudCache='';
   P=newPlayer(); parts=[]; pops=[];
+  $('btnJump').innerHTML=CHARS[gs.char].fly?'<span class="ic">🪽</span>날기':'<span class="ic">⤒</span>점프';
   loadLevel(fromStage||1); show('play'); setPhase('intro'); regDone=false; $('btnReg').style.opacity=1;
 }
 function setPhase(p){ phase=p; phaseT=0;
@@ -1272,8 +1322,10 @@ function update(dt){
   if(state!=='play') return;
   const live=foes.filter(f=>f.type!=='cloud');
   if(phase==='run'){
-    if(D.hurry && !hurried && gs.stageT>D.hurry && live.length){ hurried=true; SFX.hurry(); banner('서둘러요! ⏰','친구들이 화났어요'); foes.forEach(f=>{ if(!f.trap) f.angry=true; }); }
-    if(D.hurry && hurried && !cloudSent && gs.stageT>D.hurry+12 && live.length){ cloudSent=true; foes.push({type:'cloud',x:15,y:-1,w:2.4,h:2.2,dir:1,vx:0,vy:0,angry:true,spawn:0,t:0,walk:0}); banner('먹구름이 와요! ⛈',''); }
+    if(D.hurry && !hurried && gs.stageT>D.hurry-5 && !gs.hurryWarn && live.length){ gs.hurryWarn=true; toast('⏰ 조금만 더 있으면 친구들이 화가 나요!'); }
+    if(D.hurry && !hurried && gs.stageT>D.hurry && live.length){ hurried=true; SFX.hurry(); banner('HURRY UP! ⏰','친구들이 화나서 빨라졌어요'); foes.forEach(f=>{ if(!f.trap) f.angry=true; }); }
+    if(D.hurry && hurried && !cloudSent && gs.stageT>D.hurry+D.cloudD && live.length){ cloudSent=1; SFX.hurt(); foes.push({type:'cloud',x:15,y:-1,w:2.4,h:2.2,dir:1,vx:0,vy:0,angry:true,spawn:0,t:0,walk:0}); banner('심술 먹구름 등장! ⛈','먹구름은 방울로 못 잡아요 · 얼른 끝내요'); }
+    if(D.hurry && cloudSent===1 && gs.diff>0 && gs.stageT>D.hurry+D.cloudD+20 && live.length){ cloudSent=2; SFX.hurt(); foes.push({type:'cloud',x:4,y:-1,w:2.4,h:2.2,dir:1,vx:0,vy:0,angry:true,spawn:0,t:0,walk:0}); banner('먹구름이 하나 더! ⛈',''); }
     if(LV.sp){ gs.spT-=dt; if(gs.spT<=0){ gs.spT=rand(5,8); if(live.length && bubbles.filter(b=>b.sp).length<3) spawnSpecial(); } }
     if(!gs.bonusDone && gs.stageT>9 && live.length){ gs.bonusDone=true; bonusItem(); }
     gs.extT-=dt;
@@ -1306,7 +1358,7 @@ function showEnding(){
   show('ending'); drawEnd();
 }
 function drawEnd(){ const c=$('endCv'), G=c.getContext('2d'), t=performance.now()/1000; G.setTransform(1,0,0,1,0,0); G.clearRect(0,0,c.width,c.height); const s=c.width/8; G.setTransform(s,0,0,s,0,0);
-  CHARS.forEach((C,i)=>{ const x=8/(CHARS.length+1)*(i+1); drawChar(G,C,x,3.7+Math.abs(Math.sin(t*4+i*1.5))*-0.25,CHARS.length>3?1.85:2.2,i===CHARS.length-1?-1:1,t,Math.sin(t*8+i)); });
+  CHARS.forEach((C,i)=>{ const x=8/(CHARS.length+1)*(i+1); drawChar(G,C,x,3.7+Math.abs(Math.sin(t*4+i*1.5))*-0.25,CHARS.length>4?1.6:CHARS.length>3?1.85:2.2,i===CHARS.length-1?-1:1,t,Math.sin(t*8+i)); });
   for(let i=0;i<6;i++) drawBubble(G,1+i*1.2,0.7+Math.sin(t*2+i)*0.2,0.3,EXTC[i]); heart(G,'#ff5f8f',4,2.0+Math.sin(t*3)*0.1,0.35); }
 function gameOver(){
   state='over'; persist();
@@ -1393,7 +1445,7 @@ function render(){
       g.save(); const cx=P.x+P.w/2, fy=P.y+P.h;
       if(P.dead){ g.translate(cx,P.y+P.h/2); g.rotate(P.rot); g.translate(-cx,-(P.y+P.h/2)); }
       const sq=P.shootA>0?1+P.shootA*0.5:1; g.translate(cx,fy); g.scale(sq,1/sq); g.translate(-cx,-fy);
-      drawChar(g,C,cx,fy,P.h*(C.dog?1.4:C.bora?1.3:C.trang?1.3:1.25),P.face,P.t,walk);
+      drawChar(g,C,cx,fy,P.h*(C.dog?1.4:C.bora?1.3:C.trang?1.3:C.uni?1.3:1.25),P.face,P.t,walk);
       g.restore();
       if(P.shootA>0){ drawBubble(g,cx+P.face*1.0,P.y+P.h*0.5,0.18+(0.18-P.shootA)*1.5,C.bub); }
       if(P.shoe&&P.onGround&&Math.abs(P.vx)>0&&Math.random()<0.3) parts.push({x:cx-P.face*0.6,y:fy-0.1,vx:-P.face*2,vy:-1,t:0,life:0.3,col:'#fff',r:0.12});
@@ -1441,7 +1493,7 @@ function refreshMenu(){
   [...$('diffSeg').children].forEach(b=>b.classList.toggle('on',+b.dataset.d===save.diff));
   $('diffDesc').textContent=DIFF[save.diff].desc;
   const mx=maxPick(); save.startStage=clamp(save.startStage||1,1,mx);
-  $('stLbl').textContent=`스테이지 ${save.startStage}부터`; $('stRow').style.opacity=mx>1?1:0.45;
+  $('stLbl').textContent=`스테이지 ${save.startStage}부터`; 
   $('tgSnd').classList.toggle('off',!save.sound); $('tgBgm').classList.toggle('off',!save.music);
   drawPreview();
 }
@@ -1457,7 +1509,7 @@ function show(name){
 $('pvPrev').onclick=()=>{ SFX.click(); save.char=(save.char+CHARS.length-1)%CHARS.length; persist(); refreshMenu(); };
 $('pvNext').onclick=()=>{ SFX.click(); save.char=(save.char+1)%CHARS.length; persist(); refreshMenu(); };
 $('diffSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; SFX.click(); save.diff=+b.dataset.d; persist(); refreshMenu(); });
-function maxPick(){ return clamp(save.maxStage[save.diff]||1,1,LASTST); }
+function maxPick(){ return LASTST; }
 function stepStage(d){ SFX.click(); const mx=maxPick(), cur=save.startStage||1;
   if(d>0&&cur>=mx){ toast(`지금은 스테이지 ${mx}까지 고를 수 있어요`); return; }
   save.startStage=clamp(cur+d,1,mx); persist(); refreshMenu(); }
